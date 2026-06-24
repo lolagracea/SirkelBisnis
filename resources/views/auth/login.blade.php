@@ -16,6 +16,7 @@
         input:focus { outline: 3px solid #cde7d8; border-color: #21875b; }
         .error { margin-top: 6px; color: #b42318; font-size: 13px; }
         .alert { padding: 12px 14px; background: #fff1f0; border: 1px solid #ffcbc5; border-radius: 6px; color: #9f1d14; margin-bottom: 16px; }
+        .alert-success { padding: 12px 14px; background: #edfcf2; border: 1px solid #c2f5d3; border-radius: 6px; color: #155724; margin-bottom: 16px; font-size: 14px; font-weight: 600; }
         .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
         .button { border: 0; border-radius: 6px; background: #166447; color: #fff; padding: 12px 18px; font-weight: 750; cursor: pointer; }
         .link { color: #166447; font-weight: 700; text-decoration: none; }
@@ -28,6 +29,15 @@
         <section class="panel">
             <h1>Masuk</h1>
             <p>Gunakan email admin atau nomor HP yang terdaftar.</p>
+
+            @if (session('success'))
+                <div class="alert-success">{{ session('success') }}</div>
+                <script>
+                    window.onload = function() {
+                        alert("{{ session('success') }}");
+                    };
+                </script>
+            @endif
 
             @if ($errors->any())
                 <div class="alert">Periksa kembali data login kamu.</div>

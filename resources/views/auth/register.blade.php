@@ -79,18 +79,15 @@
                     @csrf
                     <input type="hidden" name="account_type" value="supplier">
                     <div class="grid">
-                        <div><label>Nama PJ</label><input name="name" value="{{ old('account_type') === 'supplier' ? old('name') : '' }}" required></div>
-                        <div><label>NIK</label><input name="nik" value="{{ old('account_type') === 'supplier' ? old('nik') : '' }}" maxlength="16" required></div>
-                        <div><label>No HP</label><input name="phone_number" value="{{ old('account_type') === 'supplier' ? old('phone_number') : '' }}" required></div>
-                        <div><label>Nama Toko/Usaha</label><input name="store_name" value="{{ old('store_name') }}" required>@error('store_name')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div class="full"><label>Alamat Gudang/Toko</label><textarea name="warehouse_address" required>{{ old('warehouse_address') }}</textarea>@error('warehouse_address')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Kategori Produk</label><input name="product_category" value="{{ old('product_category') }}" required>@error('product_category')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Harga</label><input type="number" min="0" step="100" name="price" value="{{ old('price') }}" required>@error('price')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Stok</label><input type="number" min="0" name="stock" value="{{ old('stock') }}" required>@error('stock')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Minimal Order</label><input type="number" min="1" name="minimum_order" value="{{ old('minimum_order') }}" required>@error('minimum_order')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Area Pengiriman</label><input name="delivery_area" value="{{ old('delivery_area') }}" required>@error('delivery_area')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>NIB/NPWP</label><input name="business_tax_number" value="{{ old('business_tax_number') }}">@error('business_tax_number')<div class="error">{{ $message }}</div>@enderror</div>
-                        <div><label>Password</label><input type="password" name="password" required></div>
+                        <div><label>Nama PJ</label><input name="name" value="{{ old('account_type') === 'supplier' ? old('name') : '' }}" required>@error('name')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>NIK</label><input name="nik" value="{{ old('account_type') === 'supplier' ? old('nik') : '' }}" maxlength="16" required>@error('nik')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>No HP</label><input name="phone_number" value="{{ old('account_type') === 'supplier' ? old('phone_number') : '' }}" required>@error('phone_number')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>Nama Supplier/Usaha</label><input name="supplier_name" value="{{ old('supplier_name') }}" required>@error('supplier_name')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div class="full"><label>Alamat Supplier/Gudang</label><textarea name="address" required>{{ old('address') }}</textarea>@error('address')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div class="full"><label>Deskripsi</label><textarea name="description">{{ old('description') }}</textarea>@error('description')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>Latitude (Opsional)</label><input type="number" step="any" name="latitude" value="{{ old('latitude') }}">@error('latitude')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>Longitude (Opsional)</label><input type="number" step="any" name="longitude" value="{{ old('longitude') }}">@error('longitude')<div class="error">{{ $message }}</div>@enderror</div>
+                        <div><label>Password</label><input type="password" name="password" required>@error('password')<div class="error">{{ $message }}</div>@enderror</div>
                         <div><label>Konfirmasi Password</label><input type="password" name="password_confirmation" required></div>
                     </div>
                     <button class="button" type="submit">Daftar Supplier</button>

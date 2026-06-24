@@ -13,7 +13,7 @@
         h1 { margin: 0; font-size: clamp(34px, 6vw, 60px); line-height: 1.02; letter-spacing: 0; }
         p { margin: 18px 0 0; color: #65737f; font-size: 18px; line-height: 1.65; max-width: 620px; }
         .actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-        a { text-decoration: none; border-radius: 6px; padding: 13px 18px; font-weight: 800; }
+        a { display: inline-block; text-decoration: none; border-radius: 6px; padding: 13px 18px; font-weight: 800; text-align: center; cursor: pointer; }
         .primary { background: #166447; color: #fff; }
         .secondary { color: #166447; border: 1px solid #b9c8d3; background: #fff; }
     </style>

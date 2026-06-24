@@ -1,0 +1,206 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreSupplierRequest;
+use App\Http\Requests\UpdateSupplierRequest;
+use App\Http\Resources\SupplierResource;
+use App\Models\SupplierProfile;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class SupplierController extends Controller
+{
+    /**
+     * Display a listing of the resource with pagination and filtering.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            $query = SupplierProfile::with('user');
+
+            // Filter: verified
+            if ($request->has('verified')) {
+                $verified = filter_var($request->query('verified'), FILTER_VALIDATE_BOOLEAN);
+                $query->where('verified', $verified);
+            }
+
+            // Filter: rating
+            if ($request->has('rating')) {
+                $rating = (float) $request->query('rating');
+                $query->where('rating', '>=', $rating);
+            }
+
+            $suppliers = $query->paginate(10);
+            $resource = SupplierResource::collection($suppliers);
+            $responseData = $resource->response()->getData(true);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Suppliers retrieved successfully',
+                'data' => $responseData['data'],
+                'links' => $responseData['links'] ?? null,
+                'meta' => $responseData['meta'] ?? null,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve suppliers: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreSupplierRequest $request): JsonResponse
+    {
+        try {
+            // Default user_id to authenticated user if not provided in request
+            $userId = $request->input('user_id') ?? auth()->id();
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User ID is required or user must be authenticated.',
+                    'data' => null
+                ], 400);
+            }
+
+            // Check if user already has a supplier profile
+            $existing = SupplierProfile::where('user_id', $userId)->first();
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Supplier profile already exists for this user.',
+                    'data' => null
+                ], 400);
+            }
+
+            $data = array_merge($request->validated(), ['user_id' => $userId]);
+            $supplier = SupplierProfile::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Supplier created successfully',
+                'data' => new SupplierResource($supplier->load('user'))
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create supplier: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource with eager loaded products.
+     */
+    public function show(string $id): JsonResponse
+    {
+        try {
+            $supplier = SupplierProfile::with(['user', 'products'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Supplier retrieved successfully',
+                'data' => new SupplierResource($supplier)
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier profile not found.',
+                'data' => null
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve supplier: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateSupplierRequest $request, string $id): JsonResponse
+    {
+        try {
+            $supplier = SupplierProfile::findOrFail($id);
+
+            // Optional auth check: ensure user can only update their own profile unless admin
+            if (auth()->check() && auth()->id() !== $supplier->user_id && !auth()->user()->isRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action.',
+                    'data' => null
+                ], 403);
+            }
+
+            $supplier->update($request->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Supplier updated successfully',
+                'data' => new SupplierResource($supplier->load('user'))
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier profile not found.',
+                'data' => null
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update supplier: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id): JsonResponse
+    {
+        try {
+            $supplier = SupplierProfile::findOrFail($id);
+
+            // Optional auth check
+            if (auth()->check() && auth()->id() !== $supplier->user_id && !auth()->user()->isRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized action.',
+                    'data' => null
+                ], 403);
+            }
+
+            $supplier->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Supplier deleted successfully',
+                'data' => null
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier profile not found.',
+                'data' => null
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete supplier: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+}

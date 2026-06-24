@@ -39,9 +39,7 @@ class RegisterController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-
-        return redirect()->route('umkm.dashboard');
+        return redirect()->route('login.form')->with('success', 'Akun UMKM berhasil didaftarkan! Silakan masuk.');
     }
 
     public function registerSupplier(RegisterSupplierRequest $request): RedirectResponse
@@ -52,19 +50,16 @@ class RegisterController extends Controller
                 'nik' => $request->nik,
                 'phone_number' => $request->phone_number,
                 'role' => 'supplier',
-                'account_status' => 'pending',
+                'account_status' => 'active',
                 'password' => $request->password,
             ]);
 
             $user->supplierProfile()->create($request->safe()->only([
-                'store_name',
-                'warehouse_address',
-                'product_category',
-                'price',
-                'stock',
-                'minimum_order',
-                'delivery_area',
-                'business_tax_number',
+                'supplier_name',
+                'address',
+                'description',
+                'latitude',
+                'longitude',
             ]));
 
             $user->assignRole('supplier');
@@ -72,9 +67,7 @@ class RegisterController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-
-        return redirect()->route('supplier.dashboard');
+        return redirect()->route('login.form')->with('success', 'Akun Supplier berhasil didaftarkan! Silakan masuk.');
     }
 
     public function registerAdmin(RegisterAdminRequest $request): RedirectResponse
@@ -92,8 +85,6 @@ class RegisterController extends Controller
 
         $user->assignRole('admin');
 
-        Auth::login($user);
-
-        return redirect()->route('admin.dashboard');
+        return redirect()->route('login.form')->with('success', 'Akun Admin berhasil didaftarkan! Silakan masuk.');
     }
 }

@@ -23,9 +23,14 @@ Route::middleware(['auth', 'role:umkm'])->get('/umkm/dashboard', function () {
     return 'Dashboard UMKM/Pembeli';
 })->name('umkm.dashboard');
 
-Route::middleware(['auth', 'role:supplier'])->get('/supplier/dashboard', function () {
-    return 'Dashboard Supplier';
-})->name('supplier.dashboard');
+use App\Http\Controllers\Supplier\SupplierDashboardController;
+
+Route::middleware(['auth', 'role:supplier'])->group(function () {
+    Route::get('/supplier/dashboard', [SupplierDashboardController::class, 'index'])->name('supplier.dashboard');
+    Route::post('/supplier/products', [SupplierDashboardController::class, 'storeProduct'])->name('supplier.products.store');
+    Route::put('/supplier/products/{id}', [SupplierDashboardController::class, 'updateProduct'])->name('supplier.products.update');
+    Route::delete('/supplier/products/{id}', [SupplierDashboardController::class, 'destroyProduct'])->name('supplier.products.destroy');
+});
 
 Route::middleware(['auth', 'role:admin'])->get('/admin/dashboard', function () {
     return 'Dashboard Admin';
