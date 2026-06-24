@@ -14,7 +14,14 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('phone_number', 20)->unique();
+            $table->string('nik', 16)->nullable()->unique();
+            $table->enum('role', ['umkm', 'supplier', 'admin'])->index();
+            $table->enum('account_status', ['pending', 'active', 'suspended'])->default('pending')->index();
+            $table->string('admin_role')->nullable();
+            $table->json('permissions')->nullable();
+            $table->timestamp('last_login_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
