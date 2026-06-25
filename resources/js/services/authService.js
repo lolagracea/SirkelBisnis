@@ -12,19 +12,11 @@ const authService = {
 
   async registerUmkm(data) {
     const response = await api.post('/register/umkm', data);
-    if (response.data.success && response.data.token) {
-      localStorage.setItem('sirkel_token', response.data.token);
-      localStorage.setItem('sirkel_user', JSON.stringify(response.data.user));
-    }
     return response.data;
   },
 
   async registerSupplier(data) {
     const response = await api.post('/register/supplier', data);
-    if (response.data.success && response.data.token) {
-      localStorage.setItem('sirkel_token', response.data.token);
-      localStorage.setItem('sirkel_user', JSON.stringify(response.data.user));
-    }
     return response.data;
   },
 

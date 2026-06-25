@@ -35,9 +35,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await authService.registerUmkm(regData);
-      if (data.success) {
-        setUser(data.user);
-      }
       return data;
     } finally {
       setLoading(false);
@@ -48,9 +45,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await authService.registerSupplier(regData);
-      if (data.success) {
-        setUser(data.user);
-      }
       return data;
     } finally {
       setLoading(false);

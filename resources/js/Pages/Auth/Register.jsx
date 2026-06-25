@@ -30,6 +30,7 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,11 +82,7 @@ export default function Register() {
       }
 
       if (response.success) {
-        if (role === 'umkm') {
-          navigate('/umkm/dashboard');
-        } else {
-          navigate('/supplier/dashboard');
-        }
+        setIsSuccessModalOpen(true);
       }
     } catch (err) {
       // Map validation errors if exist
@@ -362,6 +359,28 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-[#E2E8F0] bg-white p-8 shadow-2xl animate-scaleUp text-center space-y-5 mx-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <ShieldCheck className="h-10 w-10 animate-bounce" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-black text-xl text-[#0F172A]">Registrasi Berhasil!</h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Akun Anda telah berhasil terdaftar. Silakan masuk menggunakan nomor HP/email dan kata sandi yang telah Anda daftarkan.
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate('/login')}
+              className="w-full py-3.5 px-4 rounded-2xl shadow-lg shadow-green-100 text-xs font-bold text-white bg-gradient-to-r from-[#16A34A] to-[#22C55E] hover:from-[#15803D] hover:to-[#16A34A] transition-all hover:scale-[1.01]"
+            >
+              Masuk Sekarang
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
