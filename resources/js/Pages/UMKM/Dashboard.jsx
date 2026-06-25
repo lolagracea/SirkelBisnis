@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-useApp();
-import { useForm, router } from '@inertiajs/react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import useGroupBuyings from '../../hooks/useGroupBuyings';
+import useOrders from '../../hooks/useOrders';
+import useAIInsight from '../../hooks/useAIInsight';
+import supplierService from '../../services/supplierService';
 import { 
   Users, 
   ShoppingCart, 
@@ -43,13 +48,17 @@ import {
   Bar 
 } from 'recharts';
 
-function useApp() {
-  // Empty helper to satisfy the eslint rule for react imports
-}
-
-export default function Dashboard({ auth, profile, stats, activeGroupBuying = [], recommendedSuppliers = [], recentOrders = [], aiInsight }) {
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  
+  const { groupBuyings, loading: gbLoading, fetchGroupBuyings, joinGroupBuying } = useGroupBuyings();
+  const { orders, loading: ordersLoading, fetchMyOrders, payOrder } = useOrders();
+  const { loading: aiLoading, fetchBusinessInsight } = useAIInsight();
+  
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   // Search and filter states
@@ -57,20 +66,140 @@ export default function Dashboard({ auth, profile, stats, activeGroupBuying = []
   const [categoryFilter, setCategoryFilter] = useState('Semua');
   const [orderFilter, setOrderFilter] = useState('all');
 
-  // Input states for modal forms (Mocking Action handlers)
+  // API Data States
+  const [suppliers, setSuppliers] = useState([]);
+  const [aiInsight, setAiInsight] = useState({
+    business_condition: 'Kondisi stabil. Terus pantau pasar.',
+    saving_opportunity: 'Peluang penghematan dengan memesan patungan kelompok.',
+    group_buying_recommendation: 'Terdapat 2 patungan aktif yang cocok.',
+    restock_recommendation: 'Stok diprediksi aman untuk 14 hari ke depan.',
+    business_advice: 'Gunakan patungan kelompok untuk memaksimalkan margin keuntungan.'
+  });
+
+  // Input states for modal forms
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [joinQuantity, setJoinQuantity] = useState(10);
   const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
   const [successToastMessage, setSuccessToastMessage] = useState('');
 
-  // Notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'AI Insight Baru', message: 'Stok singkong diperkirakan habis dalam 6 hari. Disarankan restock.', time: '5 mnt lalu', read: false },
-    { id: 2, title: 'Patungan Berhasil', message: 'Patungan Tepung Tapioka mencapai target dan siap dikirim!', time: '1 jam lalu', read: false },
-    { id: 3, title: 'Supplier Terverifikasi', message: 'CV Tani Sejahtera kini berstatus Elite Supplier.', time: '1 hari lalu', read: true }
-  ]);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Load data on mount
+  useEffect(() => {
+    const loadAllData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchGroupBuyings(),
+          fetchMyOrders(),
+          fetchBusinessInsight().then(data => {
+            if (data) setAiInsight(data);
+          }).catch(err => console.error('AI Insight error:', err)),
+          supplierService.getSuppliers().then(res => {
+            const list = Array.isArray(res) ? res : (res.data || []);
+            const mapped = list.slice(0, 5).map(s => {
+              const distanceVal = ((s.id * 4) % 12) + 1;
+              return {
+                id: s.id,
+                supplier_name: s.supplier_name,
+                rating: parseFloat(s.rating || 5.0),
+                sirkel_score: parseInt(s.sirkel_score || 90),
+                distance: `${distanceVal} km`,
+                top_product: 'Bahan Baku Unggulan',
+                badge: s.sirkel_score >= 90 ? 'Elite Supplier' : 'Trusted Supplier'
+              };
+            });
+            setSuppliers(mapped);
+          }).catch(err => console.error('Suppliers error:', err))
+        ]);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAllData();
+  }, [fetchGroupBuyings, fetchMyOrders, fetchBusinessInsight]);
+
+  // Tab change with premium fake loader effect
+  const handleTabChange = (tabName) => {
+    setIsLoading(true);
+    setActiveTab(tabName);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 450);
+  };
+
+  // Logout handler
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    await logout();
+    navigate('/login');
+  };
+
+  // Join Campaign handler
+  const triggerJoinCampaign = (campaign) => {
+    setSelectedCampaign(campaign);
+    setJoinQuantity(Math.min(50, campaign.target_quantity - campaign.current_quantity));
+    setIsJoinModalOpen(true);
+  };
+
+  const submitJoinCampaign = async () => {
+    setIsJoinModalOpen(false);
+    try {
+      await joinGroupBuying(selectedCampaign.id, joinQuantity);
+      setSuccessToastMessage(`Berhasil bergabung ke patungan ${selectedCampaign.product_name} sebanyak ${joinQuantity} unit!`);
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 4000);
+      fetchGroupBuyings();
+      fetchMyOrders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Derived dashboard variables
+  const profile = {
+    business_name: user?.profile?.business_name || user?.name || 'UMKM Owner',
+    business_type: user?.profile?.business_type || 'Makanan',
+    raw_material_category: user?.profile?.raw_material_category || 'Tepung',
+    monthly_need_estimate: user?.profile?.monthly_need_estimate || 300
+  };
+
+  const activeGroupBuying = groupBuyings.map(c => {
+    const distanceVal = ((c.id * 3) % 15) + 1;
+    const savingVal = 10 + ((c.id * 2) % 11);
+    return {
+      ...c,
+      potential_savings: `${savingVal}%`,
+      distance: `${distanceVal} km`
+    };
+  });
+
+  const activeGroupBuyingCount = activeGroupBuying.filter(c => c.status === 'open').length;
+  const activeOrdersCount = orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length;
+  const completedGroupOrdersTotal = orders.filter(o => o.status === 'Completed' && o.type === 'group').reduce((acc, curr) => acc + curr.total_price, 0);
+  const savingsVal = completedGroupOrdersTotal > 0 ? Math.round(completedGroupOrdersTotal * 0.15) : 1250000;
+
+  const stats = {
+    active_group_buying: activeGroupBuyingCount,
+    active_orders: activeOrdersCount,
+    monthly_savings: 'Rp ' + savingsVal.toLocaleString('id-ID'),
+    sirkel_score: 92
+  };
+
+  const recentOrders = orders.map(o => {
+    const d = new Date(o.created_at || Date.now());
+    const formattedDate = `${d.getDate()} ${d.toLocaleString('id-ID', { month: 'short' })} ${d.getFullYear()}`;
+    return {
+      id: `ORD-${String(o.id).padStart(5, '0')}`,
+      product: o.product?.name || 'Bahan Baku',
+      supplier: o.supplier?.supplier_name || 'Supplier Mitra',
+      quantity: o.quantity,
+      total_price: o.total_price,
+      status: o.status.charAt(0).toUpperCase() + o.status.slice(1),
+      date: formattedDate
+    };
+  });
 
   // Custom Chart Data for Purchase Analytics
   const lineChartData = [
@@ -89,36 +218,6 @@ export default function Dashboard({ auth, profile, stats, activeGroupBuying = []
     { name: 'Singkong', Terbeli: 420 },
     { name: 'Bawang Putih', Terbeli: 90 }
   ];
-
-  // Tab change with premium fake loader effect
-  const handleTabChange = (tabName) => {
-    setIsLoading(true);
-    setActiveTab(tabName);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 450);
-  };
-
-  // Logout handler
-  const handleLogout = (e) => {
-    e.preventDefault();
-    router.post(route('logout'));
-  };
-
-  // Join Campaign handler
-  const triggerJoinCampaign = (campaign) => {
-    setSelectedCampaign(campaign);
-    setJoinQuantity(Math.min(50, campaign.target_quantity - campaign.current_quantity));
-    setIsJoinModalOpen(true);
-  };
-
-  const submitJoinCampaign = () => {
-    setIsJoinModalOpen(false);
-    // Dynamic updates for local feedback
-    setSuccessToastMessage(`Berhasil bergabung ke patungan ${selectedCampaign.product_name} sebanyak ${joinQuantity} unit!`);
-    setIsSuccessToastVisible(true);
-    setTimeout(() => setIsSuccessToastVisible(false), 4000);
-  };
 
   // Helper categories for filtering
   const categories = ['Semua', 'Tepung', 'Ubi', 'Kertas', 'Minyak', 'Bumbu'];
@@ -219,7 +318,7 @@ export default function Dashboard({ auth, profile, stats, activeGroupBuying = []
             </div>
             <div className="truncate">
               <p className="font-semibold text-xs text-[#0F172A] truncate">{profile.business_name}</p>
-              <p className="text-[10px] text-[#64748B] truncate">{auth.user.email}</p>
+              <p className="text-[10px] text-[#64748B] truncate">{user?.email}</p>
             </div>
           </div>
           <button 
@@ -286,14 +385,13 @@ export default function Dashboard({ auth, profile, stats, activeGroupBuying = []
               )}
             </div>
 
-            {/* AVATAR BADGE */}
             <div className="flex items-center gap-3 border-l border-[#E2E8F0] pl-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-green-50 to-green-100 text-[#16A34A] font-bold text-xs">
                 KM
               </div>
               <div className="text-left hidden md:block">
                 <p className="font-semibold text-xs text-[#0F172A]">{profile.business_name}</p>
-                <p className="text-[10px] text-[#22C55E] font-medium tracking-wide uppercase">{auth.user.role}</p>
+                <p className="text-[10px] text-[#22C55E] font-medium tracking-wide uppercase">{user?.role}</p>
               </div>
             </div>
           </div>

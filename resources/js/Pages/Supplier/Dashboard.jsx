@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import useProducts from '../../hooks/useProducts';
+import useOrders from '../../hooks/useOrders';
+import useAIInsight from '../../hooks/useAIInsight';
+import sirkelScoreService from '../../services/sirkelScoreService';
 import { 
   Package, 
   Layers, 
@@ -30,7 +36,15 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function Dashboard({ auth, supplier, products = [], stats = [], recentOrders = [], groupBuying = [], flash = {}, aiInsight }) {
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  
+  const { products, loading: prodLoading, fetchProducts, addProduct, editProduct, removeProduct } = useProducts();
+  const { orders, loading: ordersLoading, fetchSupplierOrders, changeStatus } = useOrders();
+  const { loading: aiLoading, fetchReviewSummary } = useAIInsight();
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,50 +55,15 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Semua');
 
-  // Interactive local states initialized from props
+  // Interactive local states
   const [localOrders, setLocalOrders] = useState([]);
   const [localGroupBuying, setLocalGroupBuying] = useState([]);
+  const [sirkelScore, setSirkelScore] = useState(null);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Orders status filter
   const [orderFilter, setOrderFilter] = useState('all');
-
-  // Notifications states
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { 
-      id: 1, 
-      title: 'Pesanan Baru Masuk', 
-      message: 'Resto Sunda Nikmat membuat pesanan baru (ORD-8941).', 
-      time: '10 menit yang lalu', 
-      read: false,
-      type: 'order'
-    },
-    { 
-      id: 2, 
-      title: 'Peluang Patungan Baru', 
-      message: 'Sirkel kuliner terdekat membutuhkan 800 kg Bawang Putih.', 
-      time: '2 jam yang lalu', 
-      read: false,
-      type: 'patungan'
-    },
-    { 
-      id: 3, 
-      title: 'Akun Terverifikasi', 
-      message: 'Akun supplier Anda telah terverifikasi penuh oleh admin.', 
-      time: '1 hari yang lalu', 
-      read: true,
-      type: 'system'
-    },
-  ]);
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
 
   // Patungan submission state
   const [activePatunganOffer, setActivePatunganOffer] = useState(null);
@@ -93,18 +72,57 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
   // Flash notifications auto-fade state
   const [showFlash, setShowFlash] = useState({ success: false, error: false });
 
+  const supplier = user?.profile || {
+    id: 1,
+    supplier_name: 'Mitra Supplier',
+    description: 'Penyedia bahan baku terpercaya',
+    address: 'Kota Malang',
+    rating: 5.0,
+    sirkel_score: 92
+  };
+
+  // Load data on mount
   useEffect(() => {
-    if (recentOrders.length > 0) {
-      setLocalOrders(recentOrders);
-    } else {
-      setLocalOrders([
-        { id: 'ORD-8941', customer: 'Resto Sunda Nikmat', date: '25 Jun 2026', total: 1450000, status: 'Pending' },
-        { id: 'ORD-8940', customer: 'UMKM Bakso Mas Agus', date: '24 Jun 2026', total: 890000, status: 'Completed' },
-        { id: 'ORD-8939', customer: 'Catering Berkah', date: '24 Jun 2026', total: 4120000, status: 'Processing' },
-        { id: 'ORD-8938', customer: 'Warteg Kharisma', date: '23 Jun 2026', total: 345000, status: 'Completed' },
-      ]);
+    const loadSupplierData = async () => {
+      if (!supplier?.id) return;
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchProducts(),
+          fetchSupplierOrders(),
+          sirkelScoreService.getSupplierSirkelScore(supplier.id).then(res => {
+            if (res.success) setSirkelScore(res.data);
+          }).catch(err => console.error('SirkelScore API error:', err)),
+          fetchReviewSummary(supplier.id).then(res => {
+            if (res) setReviewSummary(res);
+          }).catch(err => console.error('AI Review Summary error:', err))
+        ]);
+      } catch (err) {
+        console.error('Error loading supplier data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSupplierData();
+  }, [supplier?.id, fetchProducts, fetchSupplierOrders, fetchReviewSummary]);
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      // Map to fit view structure
+      const mapped = orders.map(o => {
+        const d = new Date(o.created_at || Date.now());
+        const formattedDate = `${d.getDate()} ${d.toLocaleString('id-ID', { month: 'short' })} ${d.getFullYear()}`;
+        return {
+          id: `ORD-${String(o.id).padStart(5, '0')}`,
+          customer: o.buyer?.name || 'UMKM Owner',
+          date: formattedDate,
+          total: o.total_price,
+          status: o.status.charAt(0).toUpperCase() + o.status.slice(1)
+        };
+      });
+      setLocalOrders(mapped);
     }
-  }, [recentOrders]);
+  }, [orders]);
 
   useEffect(() => {
     if (groupBuying.length > 0) {
@@ -134,17 +152,15 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
     }
   }, [flash?.error]);
 
-  const user = auth?.user || { name: 'Supplier PJ', role: 'supplier' };
   const currentSupplier = supplier || {
-    supplier_name: user.name,
+    supplier_name: user?.name || 'Supplier PJ',
     description: 'Penyedia bahan baku berkualitas untuk UMKM.',
     address: 'Alamat belum diisi.',
     verified: false,
     rating: 5.0
   };
 
-  // Form management for Add/Edit product using Inertia useForm
-  const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
+  const [data, setDataState] = useState({
     name: '',
     category: 'Bahan Pangan',
     price: '',
@@ -153,6 +169,32 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
     description: '',
     image: '',
   });
+  const [errors, setErrors] = useState({});
+  const [processing, setProcessing] = useState(false);
+
+  const setData = (field, value) => {
+    if (typeof field === 'object') {
+      setDataState(prev => ({ ...prev, ...field }));
+    } else {
+      setDataState(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const reset = () => {
+    setDataState({
+      name: '',
+      category: 'Bahan Pangan',
+      price: '',
+      stock: '',
+      unit: 'pcs',
+      description: '',
+      image: '',
+    });
+  };
+
+  const clearErrors = () => {
+    setErrors({});
+  };
 
   const getIcon = (name) => {
     switch (name) {
@@ -199,26 +241,57 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
     setProductToDelete(product);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingProduct) {
-      put(`/supplier/products/${editingProduct.id}`, {
-        onSuccess: () => {
-          setIsModalOpen(false);
-          reset();
-        }
-      });
-    } else {
-      post('/supplier/products', {
-        onSuccess: () => {
-          setIsModalOpen(false);
-          reset();
-        }
-      });
+  const confirmDelete = async () => {
+    if (productToDelete) {
+      try {
+        await removeProduct(productToDelete.id);
+        setProductToDelete(null);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Gagal menghapus produk.');
+      }
     }
   };
 
-  // Interactive: update local orders status for testing
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setProcessing(true);
+    setErrors({});
+    try {
+      if (editingProduct) {
+        await editProduct(editingProduct.id, {
+          name: data.name,
+          category: data.category,
+          price: parseFloat(data.price),
+          stock: parseInt(data.stock),
+          unit: data.unit,
+          description: data.description,
+          image: data.image,
+          supplier_id: supplier.id
+        });
+      } else {
+        await addProduct({
+          name: data.name,
+          category: data.category,
+          price: parseFloat(data.price),
+          stock: parseInt(data.stock),
+          unit: data.unit,
+          description: data.description,
+          image: data.image,
+          supplier_id: supplier.id
+        });
+      }
+      setIsModalOpen(false);
+      reset();
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+      } else {
+        alert(err.response?.data?.message || 'Gagal menyimpan produk.');
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
   const updateOrderStatus = (orderId, newStatus) => {
     setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
   };
@@ -330,29 +403,14 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
             </div>
             <div>
               <p className="text-sm font-semibold text-white truncate max-w-[120px]">{currentSupplier.supplier_name}</p>
-              <p className="text-xs text-slate-500 capitalize">{user.role}</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
             </div>
           </div>
-          <button className="text-slate-500 hover:text-rose-400 transition-colors" title="Log Out" onClick={() => {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/logout';
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (csrf) {
-              const input = document.createElement('input');
-              input.type = 'hidden';
-              input.name = '_token';
-              input.value = csrf;
-              form.appendChild(input);
-            }
-            document.body.appendChild(form);
-            form.submit();
-          }}>
+          <button className="text-slate-500 hover:text-rose-400 transition-colors" title="Log Out" onClick={handleLogout}>
             <LogOut size={18} />
           </button>
         </div>
       </aside>
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen">
         {/* Top Navbar */}
@@ -1236,19 +1294,14 @@ export default function Dashboard({ auth, supplier, products = [], stats = [], r
               </button>
               <button 
                 type="button"
-                onClick={() => {
-                  router.delete(`/supplier/products/${productToDelete.id}`, {
-                    onSuccess: () => setProductToDelete(null),
-                    onError: () => setProductToDelete(null)
-                  });
-                }}
+                onClick={confirmDelete}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold shadow-sm transition-all"
               >
                 Hapus Produk
               </button>
-            </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Custom Patungan Offer Modal */}

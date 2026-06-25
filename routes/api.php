@@ -18,8 +18,14 @@ use App\Http\Controllers\API\PriceAnalysisController;
 
 
 
+use App\Http\Controllers\API\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Public Auth routes
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register/umkm', [AuthController::class, 'registerUmkm']);
+Route::post('/register/supplier', [AuthController::class, 'registerSupplier']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -33,6 +39,7 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 
 // Protected routes (Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/suppliers', [SupplierController::class, 'store']);
     Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
     Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
