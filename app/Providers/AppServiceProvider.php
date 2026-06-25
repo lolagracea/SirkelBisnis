@@ -14,11 +14,10 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        \App\Models\Review::observe(\App\Observers\ReviewObserver::class);
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
+        \App\Models\Product::observe(\App\Observers\ProductObserver::class);
     }
 }

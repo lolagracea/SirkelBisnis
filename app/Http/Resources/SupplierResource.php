@@ -26,6 +26,8 @@ class SupplierResource extends JsonResource
             'rating' => (float) $this->rating,
             'review_count' => (int) ($this->reviews_count ?? $this->reviews()->count()),
             'average_rating' => (float) $this->rating,
+            'sirkel_score' => (float) ($this->sirkel_score ?? 0.00),
+            'badge' => $this->getBadge((float) ($this->sirkel_score ?? 0.00)),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => $this->whenLoaded('user', function () {
@@ -39,5 +41,21 @@ class SupplierResource extends JsonResource
             }),
             'products' => ProductResource::collection($this->whenLoaded('products')),
         ];
+    }
+
+    /**
+     * Get Badge based on SirkelScore.
+     */
+    private function getBadge(float $score): string
+    {
+        if ($score >= 90.0) {
+            return 'Elite Supplier';
+        } elseif ($score >= 80.0) {
+            return 'Trusted Supplier';
+        } elseif ($score >= 70.0) {
+            return 'Active Supplier';
+        } else {
+            return 'Developing Supplier';
+        }
     }
 }

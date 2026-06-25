@@ -4,6 +4,7 @@ use App\Http\Controllers\API\GroupBuyingController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ReviewController;
+use App\Http\Controllers\API\SirkelScoreController;
 use App\Http\Controllers\API\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -67,4 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // SirkelScore Routes
+    Route::get('/suppliers/{id}/sirkel-score', [SirkelScoreController::class, 'show']);
+    Route::post('/admin/recalculate-sirkel-score', [SirkelScoreController::class, 'recalculate']);
 });

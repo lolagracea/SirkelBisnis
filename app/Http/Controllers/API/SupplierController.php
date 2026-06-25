@@ -34,6 +34,16 @@ class SupplierController extends Controller
                 $query->where('rating', '>=', $rating);
             }
 
+            // Sort: sirkel_score
+            if ($request->has('sort_by')) {
+                $sortBy = $request->query('sort_by');
+                if ($sortBy === 'highest_score') {
+                    $query->orderBy('sirkel_score', 'desc');
+                } elseif ($sortBy === 'lowest_score') {
+                    $query->orderBy('sirkel_score', 'asc');
+                }
+            }
+
             $suppliers = $query->paginate(10);
             $resource = SupplierResource::collection($suppliers);
             $responseData = $resource->response()->getData(true);

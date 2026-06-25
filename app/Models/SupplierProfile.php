@@ -17,10 +17,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'longitude',
     'verified',
     'rating',
+    'sirkel_score',
 ])]
 class SupplierProfile extends Model
 {
     use HasFactory;
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'verified' => 'boolean',
+        'rating' => 'float',
+        'sirkel_score' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
     /**
      * Get the user that owns the supplier profile.
      */

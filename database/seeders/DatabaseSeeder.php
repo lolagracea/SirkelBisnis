@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             GroupBuyingSeeder::class,
             OrderSeeder::class,
             ReviewSeeder::class,
+            SirkelScoreSeeder::class,
         ]);
     }
 }
