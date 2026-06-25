@@ -31,7 +31,7 @@ class GroupBuyingService
             ]);
         }
 
-        return GroupBuying::create([
+        $groupBuying = GroupBuying::create([
             'product_id' => $data['product_id'],
             'creator_id' => $creator->id,
             'target_quantity' => $data['target_quantity'],
@@ -40,6 +40,15 @@ class GroupBuyingService
             'deadline' => $data['deadline'],
             'status' => 'open',
         ]);
+
+        \App\Models\Notification::create([
+            'user_id' => $creator->id,
+            'title' => 'Program Patungan Dibuat',
+            'message' => "Program patungan Anda untuk produk " . ($groupBuying->product->name ?? 'Bahan Baku') . " berhasil dibuat dengan target volume {$groupBuying->target_quantity} unit.",
+            'type' => 'patungan',
+        ]);
+
+        return $groupBuying;
     }
 
     /**
@@ -99,6 +108,24 @@ class GroupBuyingService
             // Trigger status check/update
             $this->updateStatus($groupBuying);
 
+            // Notify Creator of the patungan (if it's not the creator themselves joining)
+            if ($groupBuying->creator_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $groupBuying->creator_id,
+                    'title' => 'Anggota Baru Patungan',
+                    'message' => "{$user->name} baru saja bergabung ke program patungan Anda untuk " . ($product->name ?? 'Bahan Baku') . " dengan kuantitas {$quantity} unit.",
+                    'type' => 'patungan',
+                ]);
+            }
+
+            // Notify joining user
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Berhasil Ikut Patungan',
+                'message' => "Anda telah berhasil bergabung ke program patungan " . ($product->name ?? 'Bahan Baku') . " dengan kuantitas {$quantity} unit.",
+                'type' => 'patungan',
+            ]);
+
             return $member;
         });
     }
@@ -122,6 +149,20 @@ class GroupBuyingService
 
         $groupBuying->status = 'cancelled';
         $groupBuying->save();
+
+        // Notify members about cancellation
+        $members = $groupBuying->members;
+        $productName = $groupBuying->product->name ?? 'Bahan Baku';
+        foreach ($members as $member) {
+            if ($member->user_id !== $user->id) {
+                \App\Models\Notification::create([
+                    'user_id' => $member->user_id,
+                    'title' => 'Patungan Dibatalkan',
+                    'message' => "Program patungan {$productName} yang Anda ikuti telah dibatalkan oleh inisiator.",
+                    'type' => 'patungan',
+                ]);
+            }
+        }
 
         return $groupBuying;
     }
@@ -147,6 +188,14 @@ class GroupBuyingService
         if ($groupBuying->current_quantity >= $groupBuying->target_quantity) {
             $groupBuying->status = 'completed';
             $groupBuying->save();
+
+            // Notify Creator
+            \App\Models\Notification::create([
+                'user_id' => $groupBuying->creator_id,
+                'title' => 'Patungan Berhasil',
+                'message' => "Program patungan Anda untuk produk " . ($groupBuying->product->name ?? 'Bahan Baku') . " berhasil mencapai target volume!",
+                'type' => 'patungan',
+            ]);
 
             // Automate Group Buying Order Creation
             $this->orderService->createGroupBuyingOrders($groupBuying);

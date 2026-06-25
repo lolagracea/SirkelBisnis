@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import useProducts from '../../hooks/useProducts';
 import useOrders from '../../hooks/useOrders';
-import useAIInsight from '../../hooks/useAIInsight';
+import useAIInsight from '../../hooks/useAIInsight.js';
 import sirkelScoreService from '../../services/sirkelScoreService';
 import { 
   Package, 
@@ -43,13 +43,17 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
   
   const { products, loading: prodLoading, fetchProducts, addProduct, editProduct, removeProduct } = useProducts();
   const { orders, loading: ordersLoading, fetchSupplierOrders, changeStatus } = useOrders();
-  const { loading: aiLoading, fetchReviewSummary } = useAIInsight();
+  const { loading: aiLoading, fetchReviewSummary, fetchBusinessInsight } = useAIInsight();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
+
+  // States to fix blank screen
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [aiInsight, setAiInsight] = useState(null);
   
   // Products filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +99,10 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
           }).catch(err => console.error('SirkelScore API error:', err)),
           fetchReviewSummary(supplier.id).then(res => {
             if (res) setReviewSummary(res);
-          }).catch(err => console.error('AI Review Summary error:', err))
+          }).catch(err => console.error('AI Review Summary error:', err)),
+          fetchBusinessInsight().then(res => {
+            if (res) setAiInsight(res.insight || res);
+          }).catch(err => console.error('AI Business Insight error:', err))
         ]);
       } catch (err) {
         console.error('Error loading supplier data:', err);
@@ -104,7 +111,7 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
       }
     };
     loadSupplierData();
-  }, [supplier?.id, fetchProducts, fetchSupplierOrders, fetchReviewSummary]);
+  }, [supplier?.id, fetchProducts, fetchSupplierOrders, fetchReviewSummary, fetchBusinessInsight]);
 
   useEffect(() => {
     if (orders.length > 0) {
@@ -298,9 +305,11 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
 
   // Filtered products for products tab
   const filteredProducts = products.filter(prod => {
-    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          prod.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'Semua' || prod.category === categoryFilter;
+    const prodName = prod?.name || '';
+    const prodCategory = prod?.category || '';
+    const matchesSearch = prodName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          prodCategory.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === 'Semua' || prodCategory === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -327,6 +336,29 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
       { name: 'Catering Berkah', date: '20 Jun 2026', stars: 5, text: 'Gula pasir kristal putih selalu bersih dan pengemasan rapi menggunakan karung tebal. Sangat recommended untuk mitra sirkel.' },
       { name: 'Warteg Kharisma', date: '18 Jun 2026', stars: 5, text: 'Tepung terigu kemasan karung harganya bersaing ketat dengan pasar konvensional. Menghemat margin keuntungan jualan kami.' }
     ]
+  };
+
+  // Definitions for stats and logout handler to fix undefined variables
+  const totalProducts = products.length;
+  const activeStock = products.reduce((acc, curr) => acc + (curr.stock || 0), 0);
+  const totalOrders = orders.length;
+  const supplierRating = Number(currentSupplier.rating || 5.0).toFixed(1);
+
+  const stats = [
+    { name: 'Total Products', value: `${totalProducts} Produk`, change: 'Katalog aktif', changeType: 'normal' },
+    { name: 'Active Stock', value: `${activeStock} Unit`, change: activeStock < 50 ? 'Stok menipis' : 'Stok melimpah', changeType: activeStock < 50 ? 'warning' : 'positive' },
+    { name: 'Total Orders', value: `${totalOrders} Pesanan`, change: 'Total pesanan masuk', changeType: 'normal' },
+    { name: 'Rating', value: supplierRating, change: `Skor Sirkel: ${sirkelScore?.score || currentSupplier.sirkel_score || 90}`, changeType: 'positive' }
+  ];
+
+  const handleLogout = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   return (

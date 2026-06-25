@@ -19,6 +19,7 @@ use App\Http\Controllers\API\PriceAnalysisController;
 
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -109,6 +110,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Price Analysis Routes
     Route::get('/ai/price-analysis/{productId}', [PriceAnalysisController::class, 'show']);
+
+    // Notification Routes
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 });
 
 

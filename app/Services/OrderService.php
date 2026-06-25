@@ -34,7 +34,7 @@ class OrderService
         return DB::transaction(function () use ($buyer, $product, $quantity, $unitPrice, $totalPrice, $supplierId, $data) {
             $orderCode = $this->generateOrderCode();
 
-            return Order::create([
+            $order = Order::create([
                 'order_code' => $orderCode,
                 'buyer_id' => $buyer->id,
                 'supplier_id' => $supplierId,
@@ -48,6 +48,19 @@ class OrderService
                 'payment_status' => 'unpaid',
                 'notes' => $data['notes'] ?? null,
             ]);
+
+            // Notify Supplier
+            $supplierProfile = \App\Models\SupplierProfile::find($supplierId);
+            if ($supplierProfile && $supplierProfile->user_id) {
+                \App\Models\Notification::create([
+                    'user_id' => $supplierProfile->user_id,
+                    'title' => 'Pesanan Masuk Baru',
+                    'message' => "Anda menerima pesanan baru untuk {$product->name} sebanyak {$quantity} {$product->unit}.",
+                    'type' => 'order',
+                ]);
+            }
+
+            return $order;
         });
     }
 
@@ -80,7 +93,7 @@ class OrderService
                 $totalPrice = $quantity * $unitPrice;
                 $orderCode = $this->generateOrderCode();
 
-                $orders[] = Order::create([
+                $order = Order::create([
                     'order_code' => $orderCode,
                     'buyer_id' => $member->user_id,
                     'supplier_id' => $supplierId,
@@ -93,6 +106,27 @@ class OrderService
                     'status' => 'pending',
                     'payment_status' => 'unpaid',
                     'notes' => 'Pesanan otomatis dari program Group Buying #' . $groupBuying->id,
+                ]);
+
+                $orders[] = $order;
+
+                // Notify Supplier
+                $supplierProfile = \App\Models\SupplierProfile::find($supplierId);
+                if ($supplierProfile && $supplierProfile->user_id) {
+                    \App\Models\Notification::create([
+                        'user_id' => $supplierProfile->user_id,
+                        'title' => 'Pesanan Masuk Baru (Patungan)',
+                        'message' => "Anda menerima pesanan patungan baru untuk {$product->name} sebanyak {$quantity} {$product->unit}.",
+                        'type' => 'order',
+                    ]);
+                }
+
+                // Notify UMKM Buyer
+                \App\Models\Notification::create([
+                    'user_id' => $member->user_id,
+                    'title' => 'Pesanan Patungan Dibuat',
+                    'message' => "Pesanan {$orderCode} untuk {$product->name} berhasil dibuat secara otomatis dari program patungan.",
+                    'type' => 'order',
                 ]);
             }
 
@@ -141,6 +175,14 @@ class OrderService
         $order->status = $newStatus;
         $order->save();
 
+        // Notify UMKM Buyer
+        \App\Models\Notification::create([
+            'user_id' => $order->buyer_id,
+            'title' => 'Status Pesanan Diperbarui',
+            'message' => "Status pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") diperbarui menjadi: " . ucfirst($newStatus) . ".",
+            'type' => 'order',
+        ]);
+
         return $order;
     }
 
@@ -163,6 +205,25 @@ class OrderService
         }
 
         $order->save();
+
+        // Notify UMKM Buyer
+        \App\Models\Notification::create([
+            'user_id' => $order->buyer_id,
+            'title' => 'Status Pembayaran Diperbarui',
+            'message' => "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".",
+            'type' => 'order',
+        ]);
+
+        // Notify Supplier
+        $supplierProfile = \App\Models\SupplierProfile::find($order->supplier_id);
+        if ($supplierProfile && $supplierProfile->user_id) {
+            \App\Models\Notification::create([
+                'user_id' => $supplierProfile->user_id,
+                'title' => 'Status Pembayaran Diperbarui',
+                'message' => "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".",
+                'type' => 'order',
+            ]);
+        }
 
         return $order;
     }
