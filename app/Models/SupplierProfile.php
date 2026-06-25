@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 
 #[Fillable([
     'user_id',
@@ -66,4 +68,13 @@ class SupplierProfile extends Model
     {
         return $this->hasMany(Review::class, 'supplier_id');
     }
+
+    /**
+     * Get the review summary for this supplier.
+     */
+    public function reviewSummary(): HasOne
+    {
+        return $this->hasOne(ReviewSummary::class, 'supplier_id');
+    }
 }
+

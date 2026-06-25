@@ -82,8 +82,17 @@ class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
+    /**
+     * Get the business insight generated for this user.
+     */
+    public function businessInsight(): HasOne
+    {
+        return $this->hasOne(BusinessInsight::class);
+    }
+
     public function isRole(string $role): bool
     {
         return $this->role === $role;
     }
 }
+

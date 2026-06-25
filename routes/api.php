@@ -6,6 +6,10 @@ use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\SirkelScoreController;
 use App\Http\Controllers\API\SupplierController;
+use App\Http\Controllers\API\AIReviewSummaryController;
+use App\Http\Controllers\API\BusinessInsightController;
+
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -72,4 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // SirkelScore Routes
     Route::get('/suppliers/{id}/sirkel-score', [SirkelScoreController::class, 'show']);
     Route::post('/admin/recalculate-sirkel-score', [SirkelScoreController::class, 'recalculate']);
+
+    // AI Review Summarizer Routes
+    Route::get('/ai/review-summary/{supplierId}', [AIReviewSummaryController::class, 'show']);
+
+    // Business Insight AI Routes
+    Route::get('/ai/business-insight', [BusinessInsightController::class, 'index']);
 });
+
+
