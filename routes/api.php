@@ -11,6 +11,8 @@ use App\Http\Controllers\API\BusinessInsightController;
 use App\Http\Controllers\API\RestockPredictionController;
 use App\Http\Controllers\API\QuantityRecommendationController;
 use App\Http\Controllers\API\GroupBuyingMatchingController;
+use App\Http\Controllers\API\PriceAnalysisController;
+
 
 
 
@@ -97,7 +99,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Group Buying Matching Routes
     Route::get('/ai/group-buying-match', [GroupBuyingMatchingController::class, 'index']);
+
+    // Price Analysis Routes
+    Route::get('/ai/price-analysis/{productId}', [PriceAnalysisController::class, 'show']);
 });
+
 
 
 
