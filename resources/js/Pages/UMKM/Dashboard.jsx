@@ -170,6 +170,8 @@ export default function Dashboard() {
     const savingVal = 10 + ((c.id * 2) % 11);
     return {
       ...c,
+      product_name: c.product_name || c.product?.name || 'Bahan Baku',
+      category: c.category || c.product?.category || 'Umum',
       potential_savings: `${savingVal}%`,
       distance: `${distanceVal} km`
     };
@@ -196,7 +198,7 @@ export default function Dashboard() {
       supplier: o.supplier?.supplier_name || 'Supplier Mitra',
       quantity: o.quantity,
       total_price: o.total_price,
-      status: o.status.charAt(0).toUpperCase() + o.status.slice(1),
+      status: o.status ? (o.status.charAt(0).toUpperCase() + o.status.slice(1)) : 'Pending',
       date: formattedDate
     };
   });

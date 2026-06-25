@@ -36,7 +36,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export default function Dashboard() {
+export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
