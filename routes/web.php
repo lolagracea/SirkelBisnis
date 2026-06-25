@@ -19,9 +19,10 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware(['auth', 'role:umkm'])->get('/umkm/dashboard', function () {
-    return 'Dashboard UMKM/Pembeli';
-})->name('umkm.dashboard');
+use App\Http\Controllers\UMKM\UmkmDashboardController;
+
+Route::middleware(['auth', 'role:umkm'])->get('/umkm/dashboard', [UmkmDashboardController::class, 'index'])->name('umkm.dashboard');
+
 
 use App\Http\Controllers\Supplier\SupplierDashboardController;
 
