@@ -96,7 +96,7 @@ export default function Dashboard() {
           }).catch(err => console.error('AI Insight error:', err)),
           supplierService.getSuppliers().then(res => {
             const list = Array.isArray(res) ? res : (res.data || []);
-            const mapped = list.slice(0, 5).map(s => {
+            const mapped = list.map(s => {
               const distanceVal = ((s.id * 4) % 12) + 1;
               return {
                 id: s.id,
@@ -200,6 +200,25 @@ export default function Dashboard() {
       date: formattedDate
     };
   });
+
+  // Filtered lists based on search query
+  const recommendedSuppliers = suppliers.filter(s => 
+    s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.top_product && s.top_product.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredGroupBuying = activeGroupBuying.filter(c => {
+    const matchesSearch = c.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.category && c.category.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = categoryFilter === 'Semua' || c.category.toLowerCase() === categoryFilter.toLowerCase();
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredOrders = recentOrders.filter(o => 
+    o.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    o.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    o.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Custom Chart Data for Purchase Analytics
   const lineChartData = [
@@ -342,6 +361,8 @@ export default function Dashboard() {
             <input 
               type="text" 
               placeholder="Cari bahan baku, supplier, atau patungan..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] py-2 pl-10 pr-4 text-xs font-medium outline-none transition-all duration-200 focus:border-[#16A34A] focus:bg-white focus:ring-1 focus:ring-[#16A34A]/25"
             />
           </div>
@@ -759,9 +780,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
-                    {activeGroupBuying
-                      .filter(c => categoryFilter === 'Semua' || c.category.toLowerCase() === categoryFilter.toLowerCase())
-                      .map(c => (
+                    {filteredGroupBuying.map(c => (
                         <div key={c.id} className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4 hover:shadow-md transition duration-200">
                           <div className="flex items-start justify-between">
                             <div>
@@ -889,7 +908,7 @@ export default function Dashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#F8FAFC]">
-                        {recentOrders.map(o => (
+                        {filteredOrders.map(o => (
                           <tr key={o.id} className="hover:bg-[#F8FAFC]">
                             <td className="py-4 font-bold text-[#16A34A]">{o.id}</td>
                             <td className="py-4 font-bold text-[#0F172A]">{o.product}</td>
