@@ -8,6 +8,12 @@ use App\Http\Controllers\API\SirkelScoreController;
 use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\API\AIReviewSummaryController;
 use App\Http\Controllers\API\BusinessInsightController;
+use App\Http\Controllers\API\RestockPredictionController;
+use App\Http\Controllers\API\QuantityRecommendationController;
+use App\Http\Controllers\API\GroupBuyingMatchingController;
+
+
+
 
 
 use Illuminate\Http\Request;
@@ -82,6 +88,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Business Insight AI Routes
     Route::get('/ai/business-insight', [BusinessInsightController::class, 'index']);
+
+    // Restock Prediction Routes
+    Route::get('/ai/restock', [RestockPredictionController::class, 'index']);
+
+    // Quantity Recommendation Routes
+    Route::get('/ai/recommend-quantity', [QuantityRecommendationController::class, 'index']);
+
+    // Group Buying Matching Routes
+    Route::get('/ai/group-buying-match', [GroupBuyingMatchingController::class, 'index']);
 });
+
+
+
 
 
