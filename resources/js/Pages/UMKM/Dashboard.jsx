@@ -461,21 +461,47 @@ export default function Dashboard() {
 
               {/* NOTIFICATIONS POPOVER */}
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-2xl ring-1 ring-[#0F172A]/5 animate-fadeIn">
+                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-2xl ring-1 ring-[#0F172A]/5 z-50 animate-fadeIn max-h-96 overflow-y-auto">
                   <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-2 mb-3">
-                    <span className="font-bold text-sm text-[#0F172A]">Notifikasi</span>
-                    <button className="text-[10px] font-bold text-[#16A34A] hover:underline">Tandai semua dibaca</button>
+                    <span className="font-bold text-sm text-[#0F172A] flex items-center gap-1.5">
+                      <Bell className="h-4 w-4 text-[#16A34A]" />
+                      <span>Notifikasi ({unreadCount})</span>
+                    </span>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={markAllAsRead}
+                        className="text-[10px] font-bold text-[#16A34A] hover:underline hover:text-[#15803D]"
+                      >
+                        Tandai semua dibaca
+                      </button>
+                    )}
                   </div>
-                  <div className="space-y-3">
-                    {notifications.map(n => (
-                      <div key={n.id} className="flex flex-col gap-1 rounded-xl p-2 transition hover:bg-[#F8FAFC]">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-xs text-[#0F172A]">{n.title}</span>
-                          <span className="text-[9px] text-[#94A3B8]">{n.time}</span>
+                  <div className="space-y-2 divide-y divide-[#F1F5F9]/50 max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="text-[#94A3B8] text-center py-6 text-xs font-semibold">Tidak ada notifikasi.</p>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n.id} 
+                          onClick={() => {
+                            markAsRead(n.id);
+                            if (n.type === 'order') handleTabChange('orders');
+                            if (n.type === 'patungan') handleTabChange('group-buying');
+                            setIsNotificationsOpen(false);
+                          }}
+                          className={`flex flex-col gap-1 rounded-xl p-3.5 cursor-pointer transition-colors ${!n.read ? 'bg-green-50/20' : 'hover:bg-[#F8FAFC]'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`text-xs ${!n.read ? 'font-bold text-[#0F172A]' : 'font-medium text-[#64748B]'}`}>{n.title}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] text-[#94A3B8] font-medium">{n.time}</span>
+                              {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] shrink-0"></span>}
+                            </div>
+                          </div>
+                          <p className={`text-xs leading-relaxed ${!n.read ? 'text-[#0F172A] font-medium' : 'text-[#64748B]'}`}>{n.message}</p>
                         </div>
-                        <p className="text-xs text-[#64748B] leading-relaxed">{n.message}</p>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               )}

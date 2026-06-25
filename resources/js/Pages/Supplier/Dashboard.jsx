@@ -1281,6 +1281,18 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
                 {errors.description && <span className="text-xs text-rose-500 font-bold">{errors.description}</span>}
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">URL Gambar Produk (Opsional)</label>
+                <input 
+                  type="text" 
+                  value={data.image} 
+                  onChange={e => setData('image', e.target.value)} 
+                  placeholder="Contoh: https://images.unsplash.com/... atau path lokal"
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
+                />
+                {errors.image && <span className="text-xs text-rose-500 font-bold">{errors.image}</span>}
+              </div>
+
               {/* Action Buttons */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50 -mx-6 -mb-6 p-6">
                 <button 
