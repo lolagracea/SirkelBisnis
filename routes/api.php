@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\GroupBuyingController;
+use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\SupplierController;
 use Illuminate\Http\Request;
@@ -24,4 +26,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // Group Buying Routes
+    Route::get('/group-buyings', [GroupBuyingController::class, 'index']);
+    Route::get('/group-buyings/{id}', [GroupBuyingController::class, 'show']);
+    Route::get('/my-group-buyings', [GroupBuyingController::class, 'myGroupBuyings']);
+    Route::get('/joined-group-buyings', [GroupBuyingController::class, 'joinedGroupBuyings']);
+
+    Route::middleware('role:umkm')->group(function () {
+        Route::post('/group-buyings', [GroupBuyingController::class, 'store']);
+        Route::post('/group-buyings/{id}/join', [GroupBuyingController::class, 'join']);
+        Route::delete('/group-buyings/{id}', [GroupBuyingController::class, 'destroy']);
+    });
+
+    // Order Routes
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::patch('/orders/{id}/payment', [OrderController::class, 'updatePayment']);
+
+    Route::middleware('role:umkm')->group(function () {
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/my-orders', [OrderController::class, 'myOrders']);
+    });
+
+    Route::middleware('role:supplier')->group(function () {
+        Route::get('/supplier-orders', [OrderController::class, 'supplierOrders']);
+        Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    });
 });

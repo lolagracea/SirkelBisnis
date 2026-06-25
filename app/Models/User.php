@@ -62,6 +62,21 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class);
     }
 
+    public function groupBuyings(): HasMany
+    {
+        return $this->hasMany(GroupBuying::class, 'creator_id');
+    }
+
+    public function groupBuyingMembers(): HasMany
+    {
+        return $this->hasMany(GroupBuyingMember::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'buyer_id');
+    }
+
     public function isRole(string $role): bool
     {
         return $this->role === $role;

@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             AdminSeeder::class,
             SupplierProductSeeder::class,
+            GroupBuyingSeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

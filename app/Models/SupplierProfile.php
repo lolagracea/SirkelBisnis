@@ -36,4 +36,12 @@ class SupplierProfile extends Model
     {
         return $this->hasMany(Product::class, 'supplier_id');
     }
+
+    /**
+     * Get the orders received by this supplier.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'supplier_id');
+    }
 }

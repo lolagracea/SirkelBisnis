@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'supplier_id',
@@ -26,5 +27,21 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(SupplierProfile::class, 'supplier_id');
+    }
+
+    /**
+     * Get the group buying instances associated with the product.
+     */
+    public function groupBuyings(): HasMany
+    {
+        return $this->hasMany(GroupBuying::class);
+    }
+
+    /**
+     * Get the orders associated with this product.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 }
