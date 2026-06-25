@@ -44,4 +44,12 @@ class SupplierProfile extends Model
     {
         return $this->hasMany(Order::class, 'supplier_id');
     }
+
+    /**
+     * Get the reviews for this supplier.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'supplier_id');
+    }
 }

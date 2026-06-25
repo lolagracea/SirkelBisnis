@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\GroupBuyingController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\ProductController;
+use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -53,4 +54,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/supplier-orders', [OrderController::class, 'supplierOrders']);
         Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
     });
+
+    // Review Routes
+    Route::get('/reviews', [ReviewController::class, 'index']);
+    Route::get('/reviews/{id}', [ReviewController::class, 'show']);
+    Route::get('/suppliers/{id}/reviews', [ReviewController::class, 'supplierReviews']);
+
+    Route::middleware('role:umkm')->group(function () {
+        Route::post('/reviews', [ReviewController::class, 'store']);
+        Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+        Route::get('/my-reviews', [ReviewController::class, 'myReviews']);
+    });
+
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });

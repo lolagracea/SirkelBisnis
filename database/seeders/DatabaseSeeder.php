@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             SupplierProductSeeder::class,
             GroupBuyingSeeder::class,
             OrderSeeder::class,
+            ReviewSeeder::class,
         ]);
     }
 }

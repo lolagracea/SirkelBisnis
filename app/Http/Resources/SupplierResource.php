@@ -24,6 +24,8 @@ class SupplierResource extends JsonResource
             'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'verified' => (bool) $this->verified,
             'rating' => (float) $this->rating,
+            'review_count' => (int) ($this->reviews_count ?? $this->reviews()->count()),
+            'average_rating' => (float) $this->rating,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => $this->whenLoaded('user', function () {
