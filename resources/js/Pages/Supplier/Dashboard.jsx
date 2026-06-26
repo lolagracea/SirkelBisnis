@@ -1299,15 +1299,52 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
                 {errors.description && <span className="text-xs text-rose-500 font-bold">{errors.description}</span>}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">URL Gambar Produk (Opsional)</label>
-                <input 
-                  type="text" 
-                  value={data.image} 
-                  onChange={e => setData('image', e.target.value)} 
-                  placeholder="Contoh: https://images.unsplash.com/... atau path lokal"
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
-                />
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Gambar Produk</label>
+                
+                {data.image && (
+                  <div className="relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+                    <img 
+                      src={data.image instanceof File ? URL.createObjectURL(data.image) : data.image} 
+                      alt="Preview" 
+                      className="object-cover w-full h-full" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setData('image', '')}
+                      className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full hover:bg-rose-600 shadow-sm"
+                      title="Hapus Gambar"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="file" 
+                    id="product-image-file"
+                    accept="image/*"
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setData('image', file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <label 
+                    htmlFor="product-image-file"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-bold text-slate-700 cursor-pointer transition-colors"
+                  >
+                    {data.image ? 'Ubah Gambar' : 'Pilih File Gambar'}
+                  </label>
+                  {data.image && (
+                    <span className="text-xs text-slate-500 font-medium truncate max-w-[200px]">
+                      {data.image instanceof File ? data.image.name : 'Gambar saat ini'}
+                    </span>
+                  )}
+                </div>
                 {errors.image && <span className="text-xs text-rose-500 font-bold">{errors.image}</span>}
               </div>
 

@@ -47,6 +47,7 @@ class SupplierProductSeeder extends Seeder
             'price' => 35000.00,
             'stock' => 500,
             'unit' => 'kg',
+            'image' => 'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?auto=format&fit=crop&w=400&q=80',
         ]);
 
         Product::create([
@@ -57,6 +58,7 @@ class SupplierProductSeeder extends Seeder
             'price' => 12000.00,
             'stock' => 1000,
             'unit' => 'kg',
+            'image' => 'https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&w=400&q=80',
         ]);
 
         // Create 5 other random suppliers
