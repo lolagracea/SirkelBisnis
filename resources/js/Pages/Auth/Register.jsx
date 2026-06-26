@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, User, AlertTriangle, ArrowRight, ShieldCheck, MapPin } from 'lucide-react';
+import Select from 'react-select';
 
 export default function Register() {
   const { registerUmkm, registerSupplier } = useAuth();
@@ -31,6 +32,42 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  
+  // Data for combobox
+  const [cities, setCities] = useState([]);
+  const [businessTypes, setBusinessTypes] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingBusinessTypes, setLoadingBusinessTypes] = useState(false);
+
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      setLoadingCities(true);
+      setLoadingBusinessTypes(true);
+      try {
+        const [citiesRes, businessTypesRes] = await Promise.all([
+          fetch('/api/kota-kabupaten'),
+          fetch('/api/jenis-usaha')
+        ]);
+        
+        if (citiesRes.ok) {
+          const data = await citiesRes.json();
+          setCities(data.data.map(c => ({ value: c.name, label: c.name })));
+        }
+        
+        if (businessTypesRes.ok) {
+          const data = await businessTypesRes.json();
+          setBusinessTypes(data.data.map(b => ({ value: b.name, label: b.name })));
+        }
+      } catch (err) {
+        console.error('Error fetching reference data:', err);
+      } finally {
+        setLoadingCities(false);
+        setLoadingBusinessTypes(false);
+      }
+    };
+    
+    fetchReferenceData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -237,13 +274,31 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1.5">Jenis Usaha</label>
-                    <input
+                    <Select
                       name="business_type"
-                      required
-                      value={formData.business_type}
-                      onChange={handleChange}
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3.5 py-2.5 text-xs outline-none focus:border-[#16A34A]"
-                      placeholder="Contoh: Kuliner / Konveksi"
+                      options={businessTypes}
+                      isLoading={loadingBusinessTypes}
+                      placeholder="Cari / Pilih Jenis Usaha"
+                      value={businessTypes.find(opt => opt.value === formData.business_type) || null}
+                      onChange={(selectedOption) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          business_type: selectedOption ? selectedOption.value : ''
+                        }));
+                      }}
+                      className="text-xs"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '0.75rem',
+                          borderColor: state.isFocused ? '#16A34A' : '#E2E8F0',
+                          boxShadow: 'none',
+                          padding: '0.1rem 0.2rem',
+                          '&:hover': {
+                            borderColor: '#16A34A'
+                          }
+                        })
+                      }}
                     />
                   </div>
                   <div>
@@ -271,13 +326,31 @@ export default function Register() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-[11px] font-bold text-[#0F172A] uppercase tracking-wider mb-1.5">Kota / Kabupaten</label>
-                    <input
+                    <Select
                       name="district_city"
-                      required
-                      value={formData.district_city}
-                      onChange={handleChange}
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3.5 py-2.5 text-xs outline-none focus:border-[#16A34A]"
-                      placeholder="Contoh: Malang"
+                      options={cities}
+                      isLoading={loadingCities}
+                      placeholder="Cari Kota / Kabupaten"
+                      value={cities.find(opt => opt.value === formData.district_city) || null}
+                      onChange={(selectedOption) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          district_city: selectedOption ? selectedOption.value : ''
+                        }));
+                      }}
+                      className="text-xs"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '0.75rem',
+                          borderColor: state.isFocused ? '#16A34A' : '#E2E8F0',
+                          boxShadow: 'none',
+                          padding: '0.1rem 0.2rem',
+                          '&:hover': {
+                            borderColor: '#16A34A'
+                          }
+                        })
+                      }}
                     />
                   </div>
                   <div className="md:col-span-2">

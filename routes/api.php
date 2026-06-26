@@ -28,6 +28,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/umkm', [AuthController::class, 'registerUmkm']);
 Route::post('/register/supplier', [AuthController::class, 'registerSupplier']);
 
+use App\Http\Controllers\Api\ReferenceController;
+Route::get('/kota-kabupaten', [ReferenceController::class, 'getCities']);
+Route::get('/jenis-usaha', [ReferenceController::class, 'getBusinessTypes']);
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
