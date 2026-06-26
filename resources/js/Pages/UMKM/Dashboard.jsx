@@ -251,8 +251,8 @@ export default function Dashboard() {
   });
 
   const activeGroupBuyingCount = activeGroupBuying.filter(c => c.status === 'open').length;
-  const activeOrdersCount = orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length;
-  const completedGroupOrdersTotal = orders.filter(o => o.status === 'Completed' && o.type === 'group').reduce((acc, curr) => acc + curr.total_price, 0);
+  const activeOrdersCount = orders.filter(o => o.status?.toLowerCase() !== 'completed' && o.status?.toLowerCase() !== 'cancelled').length;
+  const completedGroupOrdersTotal = orders.filter(o => o.status?.toLowerCase() === 'completed' && o.type === 'group').reduce((acc, curr) => acc + Number(curr.total_price), 0);
   const savingsVal = completedGroupOrdersTotal > 0 ? Math.round(completedGroupOrdersTotal * 0.15) : 1250000;
 
   const stats = {
@@ -1085,6 +1085,7 @@ export default function Dashboard() {
                             <td className="py-4">
                               <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold ${
                                 o.status === 'Completed' ? 'bg-green-50 text-green-700' :
+                                o.status === 'Paid' ? 'bg-emerald-50 text-emerald-700' :
                                 o.status === 'Shipped' ? 'bg-blue-50 text-blue-700' :
                                 o.status === 'Processing' ? 'bg-yellow-50 text-yellow-700' :
                                 'bg-gray-50 text-gray-700'

@@ -157,9 +157,9 @@ class OrderService
             }
         } else {
             $validTransitions = [
-                'pending' => ['paid'],
+                'pending' => ['paid', 'processing'],
                 'paid' => ['processing'],
-                'processing' => ['shipped'],
+                'processing' => ['shipped', 'completed'],
                 'shipped' => ['completed'],
                 'completed' => [],
                 'cancelled' => [],
@@ -175,11 +175,26 @@ class OrderService
         $order->status = $newStatus;
         $order->save();
 
-        // Notify UMKM Buyer
+        // Notify UMKM Buyer with customized, friendly messages
+        $title = 'Status Pesanan Diperbarui';
+        $message = "Status pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") diperbarui menjadi: " . ucfirst($newStatus) . ".";
+
+        if ($newStatus === 'processing') {
+            $message = "Pesanan Anda {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") sudah siap diproses oleh supplier dan akan segera dikirimkan.";
+        } elseif ($newStatus === 'shipped') {
+            $message = "Kabar baik! Pesanan Anda {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") sedang dalam perjalanan menuju lokasi Anda.";
+        } elseif ($newStatus === 'completed') {
+            $message = "Pesanan Anda {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah selesai diproses dan berhasil diterima.";
+        } elseif ($newStatus === 'cancelled') {
+            $message = "Pesanan Anda {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah dibatalkan.";
+        } elseif ($newStatus === 'paid') {
+            $message = "Pembayaran untuk pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diverifikasi. Menunggu supplier memproses pesanan Anda.";
+        }
+
         \App\Models\Notification::create([
             'user_id' => $order->buyer_id,
-            'title' => 'Status Pesanan Diperbarui',
-            'message' => "Status pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") diperbarui menjadi: " . ucfirst($newStatus) . ".",
+            'title' => $title,
+            'message' => $message,
             'type' => 'order',
         ]);
 
@@ -207,20 +222,34 @@ class OrderService
         $order->save();
 
         // Notify UMKM Buyer
+        $buyerTitle = 'Status Pembayaran Diperbarui';
+        $buyerMessage = "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".";
+        
+        if ($paymentStatus === 'paid') {
+            $buyerMessage = "Pembayaran untuk pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") berhasil diterima. Menunggu supplier memproses pesanan Anda.";
+        }
+
         \App\Models\Notification::create([
             'user_id' => $order->buyer_id,
-            'title' => 'Status Pembayaran Diperbarui',
-            'message' => "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".",
+            'title' => $buyerTitle,
+            'message' => $buyerMessage,
             'type' => 'order',
         ]);
 
         // Notify Supplier
         $supplierProfile = \App\Models\SupplierProfile::find($order->supplier_id);
         if ($supplierProfile && $supplierProfile->user_id) {
+            $supplierTitle = 'Status Pembayaran Diperbarui';
+            $supplierMessage = "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".";
+            
+            if ($paymentStatus === 'paid') {
+                $supplierMessage = "Pembayaran untuk pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah lunas. Silakan segera proses pesanan tersebut.";
+            }
+
             \App\Models\Notification::create([
                 'user_id' => $supplierProfile->user_id,
-                'title' => 'Status Pembayaran Diperbarui',
-                'message' => "Status pembayaran pesanan {$order->order_code} (" . ($order->product->name ?? 'Produk') . ") telah diubah menjadi: " . strtoupper($paymentStatus) . ".",
+                'title' => $supplierTitle,
+                'message' => $supplierMessage,
                 'type' => 'order',
             ]);
         }

@@ -299,8 +299,14 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
       setProcessing(false);
     }
   };
-  const updateOrderStatus = (orderId, newStatus) => {
-    setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+  const updateOrderStatus = async (orderId, newStatus) => {
+    const numericId = parseInt(orderId.replace('ORD-', ''), 10);
+    try {
+      await changeStatus(numericId, newStatus.toLowerCase());
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Gagal memperbarui status pesanan.');
+    }
   };
 
   // Filtered products for products tab
@@ -316,6 +322,8 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
   // Filtered orders for orders tab
   const filteredOrders = localOrders.filter(o => {
     if (orderFilter === 'all') return true;
+    if (orderFilter === 'Pending') return o.status === 'Pending' || o.status === 'Paid';
+    if (orderFilter === 'Processing') return o.status === 'Processing' || o.status === 'Shipped';
     return o.status === orderFilter;
   });
 
@@ -997,9 +1005,9 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
                       ) : (
                         filteredOrders.map((ord) => {
                           const isCompleted = ord.status === 'Completed';
-                          const isProcessing = ord.status === 'Processing';
-                          const isPending = ord.status === 'Pending';
-                          const StatusIcon = isCompleted ? CheckCircle : isProcessing ? AlertTriangle : Clock;
+                          const isProcessing = ord.status === 'Processing' || ord.status === 'Shipped';
+                          const isPending = ord.status === 'Pending' || ord.status === 'Paid';
+                          const StatusIcon = isCompleted ? CheckCircle : isProcessing ? AlertTriangle : (ord.status === 'Paid' ? CheckCircle : Clock);
                           
                           return (
                             <tr key={ord.id} className="border-b border-slate-100 hover:bg-slate-50/30 transition-colors">
@@ -1014,6 +1022,7 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
                                   isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                   isProcessing ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                  ord.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                   'bg-amber-50 text-amber-700 border-amber-200'
                                 }`}>
                                   <StatusIcon size={12} />
