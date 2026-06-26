@@ -325,8 +325,8 @@ export default function Dashboard() {
       
       {/* SUCCESS TOAST NOTIFICATION */}
       {isSuccessToastVisible && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-green-200 bg-white p-4 shadow-2xl transition-all duration-300 animate-bounce">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-lg transition-all duration-300 animate-fadeIn">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <CheckCircle className="h-5 w-5" />
           </div>
           <div>
@@ -340,11 +340,11 @@ export default function Dashboard() {
       <aside className="fixed inset-y-0 left-0 z-20 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6">
         {/* LOGO */}
         <div className="flex items-center gap-3 px-2 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#16A34A] to-[#22C55E] text-white shadow-md shadow-green-200">
-            <Sparkles className="h-5 w-5 animate-pulse" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+            <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-[#16A34A]">Bisnis</span></span>
+            <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
             <p className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold">UMKM Hub</p>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function Dashboard() {
         <nav className="flex-1 space-y-1.5 px-1">
           <button 
             onClick={() => handleTabChange('dashboard')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <TrendingUp className="h-4.5 w-4.5" />
             Dashboard
@@ -361,7 +361,7 @@ export default function Dashboard() {
           
           <button 
             onClick={() => handleTabChange('group-buying')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'group-buying' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'group-buying' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Users className="h-4.5 w-4.5" />
             Patungan Aktif
@@ -369,7 +369,7 @@ export default function Dashboard() {
 
           <button 
             onClick={() => handleTabChange('suppliers')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'suppliers' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'suppliers' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Star className="h-4.5 w-4.5" />
             Cari Supplier
@@ -377,7 +377,7 @@ export default function Dashboard() {
 
           <button 
             onClick={() => handleTabChange('orders')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'orders' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'orders' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <ShoppingCart className="h-4.5 w-4.5" />
             Pesanan Saya
@@ -385,15 +385,15 @@ export default function Dashboard() {
 
           <button 
             onClick={() => handleTabChange('ai-insight')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'ai-insight' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'ai-insight' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
-            <Sparkles className="h-4.5 w-4.5 text-[#22C55E]" />
+            <Sparkles className="h-4.5 w-4.5" />
             AI Insight
           </button>
 
           <button 
             onClick={() => handleTabChange('sirkel-score')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'sirkel-score' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'sirkel-score' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Award className="h-4.5 w-4.5" />
             SirkelScore
@@ -401,7 +401,7 @@ export default function Dashboard() {
 
           <button 
             onClick={() => handleTabChange('profile')}
-            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'profile' ? 'bg-[#16A34A]/10 text-[#16A34A]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'profile' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <User className="h-4.5 w-4.5" />
             Profil
@@ -543,8 +543,8 @@ export default function Dashboard() {
                   {/* SECTION 1: WELCOME HEADER */}
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                      <h1 className="font-black text-2xl tracking-tight text-[#0F172A] sm:text-3xl">
-                        Selamat Datang, {profile.business_name} 👋
+                      <h1 className="font-bold text-2xl tracking-tight text-[#0F172A] sm:text-3xl">
+                        Selamat Datang, {profile.business_name}
                       </h1>
                       <p className="mt-1 text-sm text-[#64748B]">
                         Kelola pembelian bahan baku dan temukan peluang penghematan hari ini.
@@ -553,7 +553,7 @@ export default function Dashboard() {
 
                     {/* QUICK ACTIONS BANNER */}
                     <div className="flex flex-wrap gap-2.5">
-                      <button onClick={() => handleTabChange('group-buying')} className="inline-flex items-center gap-2 rounded-xl bg-[#16A34A] px-4.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-green-200 transition-all hover:bg-[#15803D] hover:scale-[1.02]">
+                      <button onClick={() => handleTabChange('group-buying')} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4.5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">
                         <Users className="h-4 w-4" />
                         Gabung Patungan
                       </button>
@@ -570,14 +570,14 @@ export default function Dashboard() {
                     {/* Card 1 */}
                     <div 
                       onClick={() => handleTabChange('group-buying')}
-                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-slate-300 transition duration-150 cursor-pointer"
                     >
                       <div className="space-y-1">
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Patungan Aktif</span>
                         <p className="text-2xl font-bold text-[#0F172A] tracking-tight">{stats.active_group_buying}</p>
-                        <p className="text-[10px] text-green-600 font-medium">↑ 3 Baru minggu ini</p>
+                        <p className="text-[10px] text-emerald-600 font-medium">↑ 3 Baru minggu ini</p>
                       </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-[#16A34A] transition group-hover:bg-[#16A34A] group-hover:text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
                         <Users className="h-5 w-5" />
                       </div>
                     </div>
@@ -585,26 +585,26 @@ export default function Dashboard() {
                     {/* Card 2 */}
                     <div 
                       onClick={() => handleTabChange('orders')}
-                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-slate-300 transition duration-150 cursor-pointer"
                     >
                       <div className="space-y-1">
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Pesanan Aktif</span>
                         <p className="text-2xl font-bold text-[#0F172A] tracking-tight">{stats.active_orders}</p>
                         <p className="text-[10px] text-[#64748B] font-medium">Dalam proses pengiriman</p>
                       </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-[#16A34A] transition group-hover:bg-[#16A34A] group-hover:text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
                         <ShoppingCart className="h-5 w-5" />
                       </div>
                     </div>
 
                     {/* Card 3 */}
-                    <div className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                    <div className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-slate-300 transition duration-150">
                       <div className="space-y-1">
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Penghematan</span>
-                        <p className="text-xl font-black text-[#16A34A] tracking-tight">{stats.monthly_savings}</p>
-                        <p className="text-[10px] text-green-600 font-semibold">Menghemat 18% biaya</p>
+                        <p className="text-xl font-bold text-emerald-600 tracking-tight">{stats.monthly_savings}</p>
+                        <p className="text-[10px] text-emerald-600 font-semibold">Menghemat 18% biaya</p>
                       </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-[#16A34A] transition group-hover:bg-[#16A34A] group-hover:text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                         <Wallet className="h-5 w-5" />
                       </div>
                     </div>
@@ -612,33 +612,30 @@ export default function Dashboard() {
                     {/* Card 4 */}
                     <div 
                       onClick={() => handleTabChange('sirkel-score')}
-                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-slate-300 transition duration-150 cursor-pointer"
                     >
                       <div className="space-y-1">
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">SirkelScore</span>
                         <p className="text-2xl font-bold text-[#0F172A] tracking-tight">{stats.sirkel_score}</p>
-                        <p className="text-[10px] text-[#16A34A] font-semibold">Reputasi: Sangat Baik</p>
+                        <p className="text-[10px] text-emerald-600 font-semibold">Reputasi: Sangat Baik</p>
                       </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-[#16A34A] transition group-hover:bg-[#16A34A] group-hover:text-white">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
                         <Award className="h-5 w-5" />
                       </div>
                     </div>
                   </div>
 
                   {/* SECTION 3: AI INSIGHT HERO CARD */}
-                  <div className="rounded-3xl bg-gradient-to-r from-[#16A34A] to-[#15803D] p-8 text-white shadow-xl shadow-green-100 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-white/5 -translate-y-10 translate-x-10"></div>
-                    <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-white/5 translate-y-10 -translate-x-10"></div>
-                    
+                  <div className="rounded-3xl bg-slate-900 border border-slate-800 p-8 text-slate-100 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
                     <div className="space-y-4 max-w-2xl">
-                      <div className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider w-fit">
-                        <Sparkles className="h-4 w-4 text-green-200" />
+                      <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700/50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider w-fit text-emerald-400">
+                        <Sparkles className="h-4 w-4" />
                         AI Insight Terkini
                       </div>
-                      <h2 className="text-xl md:text-2xl font-black leading-tight tracking-tight">
+                      <h2 className="text-xl md:text-2xl font-bold leading-tight tracking-tight text-white">
                         Optimalkan biaya pembelian Anda minggu ini
                       </h2>
-                      <div className="space-y-2 text-xs md:text-sm text-green-50 leading-relaxed font-medium">
+                      <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
                         <p>• {aiInsight.restock_recommendation}</p>
                         <p>• {aiInsight.group_buying_recommendation}</p>
                         <p>• {aiInsight.saving_opportunity}</p>
@@ -649,7 +646,7 @@ export default function Dashboard() {
                     <div className="shrink-0 flex flex-col gap-2">
                       <button 
                         onClick={() => handleTabChange('ai-insight')} 
-                        className="rounded-2xl bg-white px-6 py-3.5 text-xs font-bold text-[#16A34A] shadow-md hover:bg-green-50 hover:scale-[1.03] transition-all flex items-center justify-center gap-2"
+                        className="rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                       >
                         Lihat Detail AI
                         <ArrowRight className="h-4 w-4" />
@@ -1081,7 +1078,7 @@ export default function Dashboard() {
 
                     <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4">
                       <div className="flex items-center gap-2 text-red-600 font-bold text-xs">
-                        <AlertTriangle className="h-4.5 w-4.5 animate-bounce" />
+                        <AlertTriangle className="h-4.5 w-4.5" />
                         Prediksi Depletion & Restock
                       </div>
                       <p className="text-xs text-[#64748B] leading-relaxed">{aiInsight.restock_recommendation}</p>
