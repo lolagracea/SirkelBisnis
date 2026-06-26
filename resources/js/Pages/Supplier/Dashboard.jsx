@@ -33,7 +33,9 @@ import {
   Info,
   Filter,
   Check,
-  ChevronDown
+  ChevronDown,
+  ArrowRight,
+  Sliders
 } from 'lucide-react';
 
 export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
@@ -264,28 +266,23 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
     setProcessing(true);
     setErrors({});
     try {
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('category', data.category);
+      formData.append('price', parseFloat(data.price));
+      formData.append('stock', parseInt(data.stock));
+      formData.append('unit', data.unit);
+      formData.append('description', data.description || '');
+      formData.append('supplier_id', supplier.id);
+      
+      if (data.image) {
+        formData.append('image', data.image);
+      }
+
       if (editingProduct) {
-        await editProduct(editingProduct.id, {
-          name: data.name,
-          category: data.category,
-          price: parseFloat(data.price),
-          stock: parseInt(data.stock),
-          unit: data.unit,
-          description: data.description,
-          image: data.image,
-          supplier_id: supplier.id
-        });
+        await editProduct(editingProduct.id, formData);
       } else {
-        await addProduct({
-          name: data.name,
-          category: data.category,
-          price: parseFloat(data.price),
-          stock: parseInt(data.stock),
-          unit: data.unit,
-          description: data.description,
-          image: data.image,
-          supplier_id: supplier.id
-        });
+        await addProduct(formData);
       }
       setIsModalOpen(false);
       reset();
@@ -370,110 +367,127 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="flex min-h-screen bg-[#F8FAFC] font-sans antialiased text-[#1E293B]">
       {/* Sidebar for desktop and mobile */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-400 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:inset-0 transition-transform duration-300 ease-in-out flex flex-col justify-between border-r border-slate-800 shrink-0`}>
-        <div>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out`}>
+        <div className="flex-1 flex flex-col">
           {/* Brand Header */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-lg">S</div>
-              <span className="text-white font-bold text-lg tracking-tight">Sirkel Bisnis</span>
+          <div className="flex items-center justify-between px-2 mb-8 h-10 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                <Layers className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
+                <p className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold">Supplier Portal</p>
+              </div>
             </div>
-            <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+            <button className="lg:hidden text-[#64748B] hover:text-[#0F172A]" onClick={() => setIsSidebarOpen(false)}>
               <X size={20} />
             </button>
           </div>
 
           {/* Sidebar Menu Links */}
-          <nav className="p-4 space-y-1">
+          <nav className="flex-1 space-y-1.5 px-1 overflow-y-auto">
             <button 
               onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'dashboard' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
+                activeTab === 'dashboard' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
               }`}
             >
-              <Layers size={18} />
+              <Layers className="h-4.5 w-4.5" />
               <span>Dashboard</span>
             </button>
             <button 
               onClick={() => { setActiveTab('products'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'products' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
+                activeTab === 'products' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
               }`}
             >
-              <Package size={18} />
+              <Package className="h-4.5 w-4.5" />
               <span>Kelola Produk</span>
             </button>
             <button 
               onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'orders' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
+                activeTab === 'orders' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
               }`}
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart className="h-4.5 w-4.5" />
               <span>Kelola Pesanan</span>
             </button>
             <button 
               onClick={() => { setActiveTab('group-buying'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'group-buying' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
+                activeTab === 'group-buying' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
               }`}
             >
-              <Users size={18} />
+              <Users className="h-4.5 w-4.5" />
               <span>Sirkel Patungan</span>
             </button>
             <button 
               onClick={() => { setActiveTab('reviews'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === 'reviews' ? 'text-white bg-slate-800' : 'hover:text-white hover:bg-slate-800/50'
+              className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
+                activeTab === 'reviews' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
               }`}
             >
-              <Star size={18} />
+              <Star className="h-4.5 w-4.5" />
               <span>Ulasan & Rating</span>
             </button>
           </nav>
         </div>
 
         {/* User Footer Profile */}
-        <div className="p-4 border-t border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-700/50 flex items-center justify-center text-emerald-400">
-              <User size={18} />
+        <div className="border-t border-[#E2E8F0] pt-4 mt-auto shrink-0">
+          <div className="flex items-center gap-3 px-2 py-1 mb-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-sm shadow-sm">
+              {currentSupplier.supplier_name.charAt(0)}
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white truncate max-w-[120px]">{currentSupplier.supplier_name}</p>
-              <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
+            <div className="truncate">
+              <p className="font-semibold text-xs text-[#0F172A] truncate max-w-[120px]">{currentSupplier.supplier_name}</p>
+              <p className="text-[10px] text-[#64748B] truncate">{user?.email}</p>
             </div>
           </div>
-          <button className="text-slate-500 hover:text-rose-400 transition-colors" title="Log Out" onClick={handleLogout}>
-            <LogOut size={18} />
+          <button 
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-red-600 hover:bg-red-50 text-xs font-semibold transition-all duration-200"
+          >
+            <LogOut className="h-4 w-4" />
+            Keluar Akun
           </button>
         </div>
       </aside>
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen">
+      <div className="flex-1 lg:pl-64 flex flex-col overflow-x-hidden min-h-screen">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[#E2E8F0] bg-white/80 backdrop-blur-md px-8 shadow-sm">
           <div className="flex items-center gap-4">
-            <button className="lg:hidden text-slate-600 hover:text-slate-900" onClick={() => setIsSidebarOpen(true)}>
+            <button className="lg:hidden text-[#64748B] hover:text-[#0F172A]" onClick={() => setIsSidebarOpen(true)}>
               <Menu size={20} />
             </button>
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 w-80 text-slate-400 text-sm">
-              <Search size={16} />
-              <span>Cari produk, sirkel patungan...</span>
+            {/* SEARCH BAR */}
+            <div className="relative w-80 hidden sm:block">
+              <Search className="absolute top-2.5 left-3.5 h-4.5 w-4.5 text-[#94A3B8]" />
+              <input 
+                type="text" 
+                placeholder="Cari produk, sirkel patungan..."
+                className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] py-2 pl-10 pr-4 text-xs font-medium outline-none transition-all duration-200 focus:border-[#16A34A] focus:bg-white focus:ring-1 focus:ring-[#16A34A]/25"
+                readOnly
+              />
             </div>
           </div>
 
           <div className="flex items-center gap-4 relative">
             <button 
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-2 text-slate-600 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-all focus:outline-none"
+              className="relative rounded-xl border border-[#E2E8F0] p-2.5 text-[#64748B] transition-all hover:bg-[#F8FAFC] hover:text-[#0F172A]"
               title="Notifikasi"
             >
-              <Bell size={20} />
+              <Bell className="h-4.5 w-4.5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse"></span>
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
               )}
             </button>
 
@@ -481,25 +495,25 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
                 
-                <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all animate-scaleIn">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Bell size={16} className="text-emerald-600" />
+                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-2xl ring-1 ring-[#0F172A]/5 z-50 animate-fadeIn max-h-96 overflow-y-auto">
+                  <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-2 mb-3">
+                    <span className="font-bold text-sm text-[#0F172A] flex items-center gap-1.5">
+                      <Bell className="h-4 w-4 text-[#16A34A]" />
                       <span>Notifikasi ({unreadCount})</span>
                     </span>
                     {unreadCount > 0 && (
                       <button 
                         onClick={markAllAsRead}
-                        className="text-xs text-emerald-600 hover:text-emerald-700 font-bold"
+                        className="text-[10px] font-bold text-[#16A34A] hover:underline hover:text-[#15803D]"
                       >
                         Tandai semua dibaca
                       </button>
                     )}
                   </div>
 
-                  <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
+                  <div className="space-y-2 divide-y divide-[#F1F5F9]/50 max-h-72 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <p className="text-slate-400 text-center py-8 text-xs font-semibold">Tidak ada notifikasi.</p>
+                      <p className="text-[#94A3B8] text-center py-6 text-xs font-semibold">Tidak ada notifikasi.</p>
                     ) : (
                       notifications.map((notif) => {
                         const NotifIcon = notif.type === 'order' ? ShoppingCart : notif.type === 'patungan' ? Users : CheckCircle;
@@ -513,44 +527,32 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
                               if (notif.type === 'patungan') setActiveTab('group-buying'); 
                               setIsNotificationsOpen(false); 
                             }}
-                            className={`p-4 flex gap-3 cursor-pointer hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-emerald-50/20' : ''}`}
+                            className={`flex flex-col gap-1 rounded-xl p-3.5 cursor-pointer transition-colors ${!notif.read ? 'bg-green-50/20' : 'hover:bg-[#F8FAFC]'}`}
                           >
-                            <div className={`p-2 rounded-lg shrink-0 self-start ${!notif.read ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                              <NotifIcon size={16} />
-                            </div>
-                            <div className="flex-1 space-y-0.5">
-                              <div className="flex items-center justify-between">
-                                <p className={`text-xs font-bold ${!notif.read ? 'text-slate-900' : 'text-slate-700'}`}>{notif.title}</p>
-                                {!notif.read && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>}
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs ${!notif.read ? 'font-bold text-[#0F172A]' : 'font-medium text-[#64748B]'}`}>{notif.title}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] text-[#94A3B8] font-medium">{notif.time}</span>
+                                {!notif.read && <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] shrink-0"></span>}
                               </div>
-                              <p className={`text-xs leading-relaxed ${!notif.read ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>{notif.message}</p>
-                              <span className="text-[10px] text-slate-400 font-bold block mt-1">{notif.time}</span>
                             </div>
+                            <p className={`text-xs leading-relaxed ${!notif.read ? 'text-[#0F172A] font-medium' : 'text-[#64748B]'}`}>{notif.message}</p>
                           </div>
                         );
                       })
                     )}
                   </div>
-                  
-                  <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-center">
-                    <button 
-                      onClick={() => { 
-                        setIsNotificationsOpen(false); 
-                        alert('Halaman pusat notifikasi akan tersedia setelah diintegrasikan dengan modul notifikasi sistem.'); 
-                      }}
-                      className="text-xs text-slate-500 hover:text-slate-700 font-bold"
-                    >
-                      Lihat Semua Notifikasi
-                    </button>
-                  </div>
                 </div>
               </>
             )}
-            <div className="h-8 w-px bg-slate-200"></div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-700 hidden md:inline">{currentSupplier.supplier_name}</span>
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+            
+            <div className="flex items-center gap-3 border-l border-[#E2E8F0] pl-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-green-50 to-green-100 text-[#16A34A] font-bold text-xs">
                 {currentSupplier.supplier_name.charAt(0)}
+              </div>
+              <div className="text-left hidden md:block">
+                <p className="font-semibold text-xs text-[#0F172A]">{currentSupplier.supplier_name}</p>
+                <p className="text-[10px] text-[#22C55E] font-medium tracking-wide uppercase">{user?.role}</p>
               </div>
             </div>
           </div>
@@ -586,87 +588,94 @@ export default function Dashboard({ groupBuying = [], flash = {} } = {}) {
           {activeTab === 'dashboard' && (
             <div className="space-y-6 animate-fadeIn">
               {/* Header Profile Panel */}
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-xl font-bold text-slate-900">{currentSupplier.supplier_name}</h2>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
+                <div className="space-y-1">
+                  <h1 className="font-bold text-2xl tracking-tight text-[#0F172A] sm:text-3xl">
+                    Selamat Datang, {currentSupplier.supplier_name}
+                  </h1>
+                  <div className="flex items-center gap-2.5 flex-wrap pt-1.5">
                     {currentSupplier.verified ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle size={10} />
                         <span>Terverifikasi</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                        <Clock size={12} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        <Clock size={10} />
                         <span>Menunggu Verifikasi</span>
                       </span>
                     )}
-                    <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-sm bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                      <Star size={14} className="fill-amber-500" />
+                    <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-xs bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                      <Star className="h-3 w-3 fill-current text-amber-500" />
                       <span>{Number(currentSupplier.rating || 5.0).toFixed(1)}</span>
                     </span>
+                    <span className="text-xs text-[#64748B] flex items-center gap-1"><MapPin size={12} /> {currentSupplier.address}</span>
                   </div>
-                  <p className="text-slate-500 text-sm max-w-2xl">{currentSupplier.description}</p>
-                  <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                    <MapPin size={14} />
-                    <span>{currentSupplier.address}</span>
-                  </div>
+                  <p className="text-sm text-[#64748B] pt-0.5">
+                    {currentSupplier.description}
+                  </p>
                 </div>
-                
-                <button 
-                  onClick={openAddModal}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm shrink-0"
-                >
-                  <Plus size={16} />
-                  <span>Tambah Produk Baru</span>
-                </button>
+
+                <div className="flex flex-wrap gap-2.5 shrink-0 self-start md:self-center">
+                  <button 
+                    onClick={openAddModal} 
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4.5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah Produk Baru
+                  </button>
+                </div>
               </div>
 
               {/* Statistics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat, i) => {
                   const Icon = getIcon(stat.name);
                   return (
-                    <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">{stat.name}</span>
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                          <Icon size={18} />
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <span className="text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</span>
-                        <p className={`text-xs mt-1.5 flex items-center gap-1 font-semibold ${
+                    <div 
+                      key={i} 
+                      className="group flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-slate-300 transition duration-150"
+                    >
+                      <div className="space-y-1">
+                        <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">{stat.name === 'Total Products' ? 'Total Produk' : stat.name === 'Active Stock' ? 'Stok Aktif' : stat.name === 'Total Orders' ? 'Total Pesanan' : stat.name}</span>
+                        <p className="text-2xl font-bold text-[#0F172A] tracking-tight">{stat.value}</p>
+                        <p className={`text-[10px] font-semibold ${
                           stat.changeType === 'positive' ? 'text-emerald-600' : 
-                          stat.changeType === 'warning' ? 'text-amber-600' : 'text-slate-500'
+                          stat.changeType === 'warning' ? 'text-amber-600' : 'text-[#64748B]'
                         }`}>
                           {stat.change}
                         </p>
+                      </div>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                        <Icon className="h-5 w-5" />
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* AI Insight Card */}
-              <div className="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white rounded-xl border border-emerald-700 shadow-lg p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between gap-6 hover:shadow-xl transition-all">
-                <div className="absolute -right-8 -bottom-8 text-emerald-700/25 pointer-events-none">
-                  <Sparkles size={200} />
-                </div>
-                <div className="space-y-4 max-w-2xl z-10">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600/30 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-semibold">
-                    <Sparkles size={14} className="animate-pulse" />
-                    <span>Rekomendasi AI Insight</span>
+              {/* SECTION 3: REKOMENDASI ANALISIS PASAR */}
+              <div className="rounded-3xl bg-slate-900 border border-slate-800 p-8 text-slate-100 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative overflow-hidden">
+                <div className="space-y-4 flex-1">
+                  <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700/50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider w-fit text-emerald-400">
+                    <TrendingUp className="h-4 w-4" />
+                    Ringkasan Analisis Pasar
                   </div>
-                   <h2 className="text-xl md:text-2xl font-bold tracking-tight">Analisis AI Insight & Prediksi Pasar</h2>
-                  <p className="text-emerald-100/90 text-sm leading-relaxed font-medium">
+                  <h2 className="text-xl md:text-2xl font-bold leading-tight tracking-tight text-white">
+                    Peluang Pasar Terkini
+                  </h2>
+                  <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
                     {aiInsight || "Berdasarkan histori transaksi UMKM kuliner di Bandung Raya, permintaan Bawang Merah dan Cabai Rawit diprediksi akan meningkat 18% dalam 2 minggu ke depan. Kami merekomendasikan untuk menaikkan stok aktif dan menawarkan penawaran khusus ke sirkel kuliner terdekat."}
                   </p>
                 </div>
-                <div className="flex flex-col justify-center gap-3 z-10 min-w-[160px]">
-                  <button onClick={() => setActiveTab('products')} className="px-4 py-2.5 bg-white text-emerald-950 rounded-lg font-bold shadow-md hover:bg-emerald-50 transition-all text-sm flex items-center justify-center gap-2">
-                    <span>Kelola Stok</span>
-                    <ChevronRight size={14} />
+
+                <div className="shrink-0 flex flex-col gap-2 self-start lg:self-center">
+                  <button 
+                    onClick={() => setActiveTab('products')} 
+                    className="rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    Kelola Stok
+                    <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
               </div>

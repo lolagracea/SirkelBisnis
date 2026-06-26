@@ -41,8 +41,8 @@ class ReviewSummarizerService
             throw new \Exception('Gemini API key is not configured.');
         }
 
-        // Exact prompt request from prompt instructions
-        $prompt = "Analyze the supplier reviews below.\n\nReturn JSON only.\n\nGenerate:\n\n1. Positive Highlights\n2. Negative Highlights\n3. Overall Summary\n\nReviews:\n" . $reviewsJson;
+        // Exact prompt request from prompt instructions, updated to explicitly avoid emojis/emoticons
+        $prompt = "Analyze the supplier reviews below.\n\nReturn JSON only.\n\nGenerate:\n\n1. Positive Highlights\n2. Negative Highlights\n3. Overall Summary\n\nNote: Do not include any emojis, emoticons, or icon symbols in the response highlights or summary text. Keep the tone professional, clean, and business-focused.\n\nReviews:\n" . $reviewsJson;
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 

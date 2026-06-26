@@ -102,6 +102,10 @@ class ProductController extends Controller
             }
 
             $data = array_merge($request->validated(), ['supplier_id' => $supplierId]);
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('products', 'public');
+                $data['image'] = '/storage/' . $path;
+            }
             $product = Product::create($data);
 
             return response()->json([
@@ -164,7 +168,12 @@ class ProductController extends Controller
                 ], 403);
             }
 
-            $product->update($request->validated());
+            $data = $request->validated();
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('products', 'public');
+                $data['image'] = '/storage/' . $path;
+            }
+            $product->update($data);
 
             return response()->json([
                 'success' => true,

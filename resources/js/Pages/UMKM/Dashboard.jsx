@@ -34,7 +34,8 @@ import {
   LogOut,
   User,
   Heart,
-  ChevronDown
+  ChevronDown,
+  Layers
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -341,7 +342,7 @@ export default function Dashboard() {
         {/* LOGO */}
         <div className="flex items-center gap-3 px-2 mb-8">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-            <Sparkles className="h-5 w-5" />
+            <Layers className="h-5 w-5" />
           </div>
           <div>
             <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
@@ -387,8 +388,8 @@ export default function Dashboard() {
             onClick={() => handleTabChange('ai-insight')}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'ai-insight' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
-            <Sparkles className="h-4.5 w-4.5" />
-            AI Insight
+            <Sliders className="h-4.5 w-4.5" />
+            Analisis Bisnis
           </button>
 
           <button 
@@ -625,30 +626,43 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* SECTION 3: AI INSIGHT HERO CARD */}
-                  <div className="rounded-3xl bg-slate-900 border border-slate-800 p-8 text-slate-100 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
-                    <div className="space-y-4 max-w-2xl">
+                  {/* SECTION 3: REKOMENDASI OPERASIONAL HERO CARD */}
+                  <div className="rounded-3xl bg-slate-900 border border-slate-800 p-8 text-slate-100 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative overflow-hidden">
+                    <div className="space-y-4 flex-1">
                       <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700/50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider w-fit text-emerald-400">
-                        <Sparkles className="h-4 w-4" />
-                        AI Insight Terkini
+                        <TrendingUp className="h-4 w-4" />
+                        Rekomendasi Operasional
                       </div>
                       <h2 className="text-xl md:text-2xl font-bold leading-tight tracking-tight text-white">
                         Optimalkan biaya pembelian Anda minggu ini
                       </h2>
-                      <div className="space-y-2 text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                        <p>• {aiInsight.restock_recommendation}</p>
-                        <p>• {aiInsight.group_buying_recommendation}</p>
-                        <p>• {aiInsight.saving_opportunity}</p>
-                        <p>• <span className="font-bold text-white">Saran Bisnis:</span> {aiInsight.business_advice}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Prediksi Restock</p>
+                          <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-medium">{aiInsight.restock_recommendation}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Kampanye Patungan</p>
+                          <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-medium">{aiInsight.group_buying_recommendation}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Peluang Hemat</p>
+                          <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-medium">{aiInsight.saving_opportunity}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Saran Operasional</p>
+                          <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-medium">{aiInsight.business_advice}</p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex flex-col gap-2">
+                    <div className="shrink-0 flex flex-col gap-2 self-start lg:self-center">
                       <button 
                         onClick={() => handleTabChange('ai-insight')} 
                         className="rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                       >
-                        Lihat Detail AI
+                        Lihat Detail Analisis
                         <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>
@@ -1041,27 +1055,27 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* TAB 5: AI INSIGHTS */}
+              {/* TAB 5: ANALISIS BISNIS */}
               {activeTab === 'ai-insight' && (
                 <div className="space-y-6 max-w-4xl">
                   <div>
                     <h2 className="font-black text-xl text-[#0F172A] tracking-tight sm:text-2xl">
-                      AI Wawasan Bisnis
+                      Analisis & Rekomendasi Bisnis
                     </h2>
-                    <p className="text-xs text-[#64748B]">Saran prediktif kecerdasan buatan Gemini AI berdasarkan riwayat transaksi.</p>
+                    <p className="text-xs text-[#64748B]">Prediksi kebutuhan stok dan peluang penghematan operasional berdasarkan analisis data transaksi.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4">
-                      <div className="flex items-center gap-2 text-[#16A34A] font-bold text-xs">
-                        <Sparkles className="h-4.5 w-4.5" />
-                        Kondisi Pembelian & Kebutuhan
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
+                        <TrendingUp className="h-4.5 w-4.5" />
+                        Status Operasional & Stok
                       </div>
                       <p className="text-xs text-[#64748B] leading-relaxed">{aiInsight.business_condition}</p>
                     </div>
 
                     <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4">
-                      <div className="flex items-center gap-2 text-[#16A34A] font-bold text-xs">
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
                         <Wallet className="h-4.5 w-4.5" />
                         Peluang Penghematan Biaya
                       </div>
@@ -1069,7 +1083,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4">
-                      <div className="flex items-center gap-2 text-[#16A34A] font-bold text-xs">
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
                         <Users className="h-4.5 w-4.5" />
                         Rekomendasi Kampanye Patungan
                       </div>
@@ -1079,15 +1093,15 @@ export default function Dashboard() {
                     <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 space-y-4">
                       <div className="flex items-center gap-2 text-red-600 font-bold text-xs">
                         <AlertTriangle className="h-4.5 w-4.5" />
-                        Prediksi Depletion & Restock
+                        Prediksi Restock & Kekurangan Stok
                       </div>
                       <p className="text-xs text-[#64748B] leading-relaxed">{aiInsight.restock_recommendation}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl bg-green-50 border border-green-100 p-6 space-y-2">
-                    <span className="font-extrabold text-[#16A34A] text-xs">AI Rekomendasi Bisnis Teratas</span>
-                    <p className="text-xs text-green-900 leading-relaxed font-semibold">{aiInsight.business_advice}</p>
+                  <div className="rounded-3xl bg-emerald-50 border border-emerald-100 p-6 space-y-2">
+                    <span className="font-extrabold text-emerald-800 text-xs">Rekomendasi Operasional Utama</span>
+                    <p className="text-xs text-emerald-950 leading-relaxed font-semibold">{aiInsight.business_advice}</p>
                   </div>
                 </div>
               )}
@@ -1379,7 +1393,8 @@ export default function Dashboard() {
                     {selectedSupplier.badge}
                   </span>
                   <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-xs bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                    ★ {selectedSupplier.rating}
+                    <Star className="h-3 w-3 fill-current text-amber-500" />
+                    <span>{selectedSupplier.rating}</span>
                   </span>
                 </div>
                 <p className="text-xs text-[#64748B] max-w-2xl">{selectedSupplier.description}</p>
