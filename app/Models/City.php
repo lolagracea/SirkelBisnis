@@ -9,5 +9,10 @@ class City extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['emsifa_id', 'name', 'province'];
+
+    public function kecamatans()
+    {
+        return $this->hasMany(Kecamatan::class);
+    }
 }

@@ -73,25 +73,30 @@ class AuthController extends Controller
     {
         $user = DB::transaction(function () use ($request): User {
             $user = User::create([
-                'name' => $request->name,
-                'nik' => $request->nik,
-                'phone_number' => $request->phone_number,
-                'role' => 'umkm',
+                'name'           => $request->name,
+                'nik'            => $request->nik,
+                'phone_number'   => $request->phone_number,
+                'role'           => 'umkm',
                 'account_status' => 'active',
-                'password' => Hash::make($request->password),
+                'password'       => Hash::make($request->password),
             ]);
 
             $user->umkmProfile()->create($request->safe()->only([
                 'business_name',
                 'business_type',
-                'business_address',
+                'province',
                 'district_city',
+                'kecamatan',
+                'kelurahan',
+                'street_address',
+                'business_address',
                 'raw_material_category',
                 'monthly_need_estimate',
+                'latitude',
+                'longitude',
             ]));
 
             $user->assignRole('umkm');
-
             return $user;
         });
 
@@ -100,15 +105,15 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Pendaftaran UMKM berhasil.',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+            'token'   => $token,
+            'user'    => [
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
                 'phone_number' => $user->phone_number,
-                'role' => $user->role,
-                'profile' => $user->umkmProfile
-            ]
+                'role'         => $user->role,
+                'profile'      => $user->umkmProfile,
+            ],
         ], 201);
     }
 

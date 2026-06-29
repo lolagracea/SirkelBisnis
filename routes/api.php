@@ -12,12 +12,7 @@ use App\Http\Controllers\API\RestockPredictionController;
 use App\Http\Controllers\API\QuantityRecommendationController;
 use App\Http\Controllers\API\GroupBuyingMatchingController;
 use App\Http\Controllers\API\PriceAnalysisController;
-
-
-
-
-
-
+use App\Http\Controllers\API\ReferenceController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\NotificationController;
 use Illuminate\Http\Request;
@@ -27,10 +22,13 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register/umkm', [AuthController::class, 'registerUmkm']);
 Route::post('/register/supplier', [AuthController::class, 'registerSupplier']);
-
-use App\Http\Controllers\Api\ReferenceController;
-Route::get('/kota-kabupaten', [ReferenceController::class, 'getCities']);
-Route::get('/jenis-usaha', [ReferenceController::class, 'getBusinessTypes']);
+// Reference routes (tambahkan di bawah yang sudah ada)
+Route::get('/kota-kabupaten',           [ReferenceController::class, 'getCities']);
+Route::get('/jenis-usaha',              [ReferenceController::class, 'getBusinessTypes']);
+Route::get('/provinsi',                 [ReferenceController::class, 'getProvinces']);
+Route::get('/kota-kabupaten/provinsi',  [ReferenceController::class, 'getCitiesByProvince']);
+Route::get('/kecamatan',               [ReferenceController::class, 'getKecamatanByCity']);
+Route::get('/kelurahan',               [ReferenceController::class, 'getKelurahanByKecamatan']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
