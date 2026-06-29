@@ -7,6 +7,8 @@ import useOrders from '../../hooks/useOrders';
 import useAIInsight from '../../hooks/useAIInsight';
 import useProducts from '../../hooks/useProducts';
 import supplierService from '../../services/supplierService';
+import useConfirmPopup from '../../hooks/useConfirmPopup';
+import ConfirmModal from '../../components/ConfirmModal';
 import { 
   Users, 
   ShoppingCart, 
@@ -61,6 +63,12 @@ export default function Dashboard() {
   const { orders, loading: ordersLoading, fetchMyOrders, payOrder, placeOrder } = useOrders();
   const { loading: aiLoading, fetchBusinessInsight } = useAIInsight();
   const { products, loading: prodLoading, fetchProducts } = useProducts();
+  const {
+    modalProps,
+    confirmGroupBuying,
+    confirmB2BPurchase,
+    confirmCancelOrder,
+  } = useConfirmPopup();
   
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -170,6 +178,14 @@ export default function Dashboard() {
 
   const submitJoinCampaign = async () => {
     setIsJoinModalOpen(false);
+    // Estimasi biaya: harga per unit × jumlah (gunakan nilai aktual jika tersedia)
+    const estimatedCost = (selectedCampaign.price_per_unit || 0) * joinQuantity;
+    const confirmed = await confirmGroupBuying(
+      selectedCampaign.product_name,
+      estimatedCost,
+      selectedCampaign.deadline_days || 3
+    );
+    if (!confirmed) return;
     try {
       await joinGroupBuying(selectedCampaign.id, joinQuantity);
       setSuccessToastMessage(`Berhasil bergabung ke patungan ${selectedCampaign.product_name} sebanyak ${joinQuantity} unit!`);
@@ -185,6 +201,13 @@ export default function Dashboard() {
   const handleBeliLangsung = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
+    const totalAmount = (selectedProduct.price || 0) * parseInt(beliQty);
+    const confirmed = await confirmB2BPurchase(
+      selectedProduct.name,
+      `${beliQty} ${selectedProduct.unit || 'unit'}`,
+      totalAmount
+    );
+    if (!confirmed) return;
     setActionProcessing(true);
     try {
       const orderData = {
@@ -201,7 +224,7 @@ export default function Dashboard() {
       setBeliNotes('');
       fetchMyOrders();
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal melakukan pembelian langsung.');
+      console.error(err.response?.data?.message || 'Gagal melakukan pembelian langsung.');
     } finally {
       setActionProcessing(false);
     }
@@ -210,6 +233,13 @@ export default function Dashboard() {
   const handleBuatPatungan = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
+    const estimatedHold = (selectedProduct.price || 0) * parseInt(patunganMin);
+    const confirmed = await confirmGroupBuying(
+      selectedProduct.name,
+      estimatedHold,
+      parseInt(patunganDeadlineDays)
+    );
+    if (!confirmed) return;
     setActionProcessing(true);
     try {
       const d = new Date();
@@ -232,7 +262,7 @@ export default function Dashboard() {
       setPatunganDeadlineDays(3);
       fetchGroupBuyings();
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal membuat patungan baru.');
+      console.error(err.response?.data?.message || 'Gagal membuat patungan baru.');
     } finally {
       setActionProcessing(false);
     }
@@ -1514,6 +1544,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* UMKM CONFIRMATION MODAL - Global, rendered once, driven by useConfirmPopup hook */}
+      <ConfirmModal {...modalProps} />
 
     </div>
   );
