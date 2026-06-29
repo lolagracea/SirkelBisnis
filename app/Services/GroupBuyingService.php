@@ -63,14 +63,10 @@ class GroupBuyingService
             ]);
         }
 
-        // Business Rule: A user cannot join the same group buying twice
-        $exists = GroupBuyingMember::where('group_buying_id', $groupBuying->id)
-            ->where('user_id', $user->id)
-            ->exists();
-
-        if ($exists) {
+        // Business Rule: Creator cannot join their own group buying as a member
+        if ($user->id === $groupBuying->creator_id) {
             throw ValidationException::withMessages([
-                'user' => ['Anda sudah bergabung dalam group buying (patungan) ini sebelumnya.'],
+                'user' => ['Pembuat program patungan tidak dapat bergabung sebagai peserta di program patungannya sendiri.'],
             ]);
         }
 
@@ -89,46 +85,65 @@ class GroupBuyingService
         }
 
         return DB::transaction(function () use ($user, $groupBuying, $quantity) {
-            // Calculate amount = quantity * product_price
-            $product = $groupBuying->product;
-            $amount = $quantity * $product->price;
+            // Re-fetch dengan row-level lock di dalam transaksi.
+            // Semua request concurrent akan ANTRI di sini dan baca nilai terbaru.
+            $lockedGroupBuying = GroupBuying::lockForUpdate()->findOrFail($groupBuying->id);
 
-            // Create GroupBuyingMember record
-            $member = GroupBuyingMember::create([
-                'group_buying_id' => $groupBuying->id,
-                'user_id' => $user->id,
-                'quantity' => $quantity,
-                'amount' => $amount,
-                'status' => 'joined',
-            ]);
-
-            // Automatically increase current_quantity
-            $groupBuying->current_quantity += $quantity;
-
-            // Trigger status check/update
-            $this->updateStatus($groupBuying);
-
-            // Notify Creator of the patungan (if it's not the creator themselves joining)
-            if ($groupBuying->creator_id !== $user->id) {
-                \App\Models\Notification::create([
-                    'user_id' => $groupBuying->creator_id,
-                    'title' => 'Anggota Baru Patungan',
-                    'message' => "{$user->name} baru saja bergabung ke program patungan Anda untuk " . ($product->name ?? 'Bahan Baku') . " dengan kuantitas {$quantity} unit.",
-                    'type' => 'patungan',
+            // Re-validasi status SETELAH dapat lock (status bisa berubah saat menunggu)
+            if ($lockedGroupBuying->status !== 'open') {
+                throw ValidationException::withMessages([
+                    'status' => ["Tidak dapat bergabung karena status group buying ini telah berubah menjadi {$lockedGroupBuying->status}."],
                 ]);
             }
 
-            // Notify joining user
+            // Cek duplikat member di dalam lock agar atomik
+            $alreadyJoined = GroupBuyingMember::where('group_buying_id', $lockedGroupBuying->id)
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if ($alreadyJoined) {
+                throw ValidationException::withMessages([
+                    'user' => ['Anda sudah bergabung dalam group buying (patungan) ini sebelumnya.'],
+                ]);
+            }
+
+            $product = $lockedGroupBuying->product;
+            $amount  = $quantity * $product->price;
+
+            $member = GroupBuyingMember::create([
+                'group_buying_id' => $lockedGroupBuying->id,
+                'user_id'         => $user->id,
+                'quantity'        => $quantity,
+                'amount'          => $amount,
+                'status'          => 'joined',
+            ]);
+
+            // Atomic increment — SQL: UPDATE group_buyings SET current_quantity = current_quantity + ?
+            $lockedGroupBuying->increment('current_quantity', $quantity);
+
+            // Refresh untuk ambil nilai terbaru sebelum cek status
+            $lockedGroupBuying->refresh();
+
+            $this->updateStatus($lockedGroupBuying);
+
+            \App\Models\Notification::create([
+                'user_id' => $lockedGroupBuying->creator_id,
+                'title'   => 'Anggota Baru Patungan',
+                'message' => "{$user->name} baru saja bergabung ke program patungan Anda untuk " . ($product->name ?? 'Bahan Baku') . " dengan kuantitas {$quantity} unit.",
+                'type'    => 'patungan',
+            ]);
+
             \App\Models\Notification::create([
                 'user_id' => $user->id,
-                'title' => 'Berhasil Ikut Patungan',
+                'title'   => 'Berhasil Ikut Patungan',
                 'message' => "Anda telah berhasil bergabung ke program patungan " . ($product->name ?? 'Bahan Baku') . " dengan kuantitas {$quantity} unit.",
-                'type' => 'patungan',
+                'type'    => 'patungan',
             ]);
 
             return $member;
         });
     }
+
 
     /**
      * Cancel an existing group buying group.
