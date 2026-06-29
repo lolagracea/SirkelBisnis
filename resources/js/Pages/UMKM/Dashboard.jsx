@@ -35,7 +35,9 @@ import {
   User,
   Heart,
   ChevronDown,
-  Layers
+  Layers,
+  Menu,
+  X
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -61,6 +63,7 @@ export default function Dashboard() {
   const { products, loading: prodLoading, fetchProducts } = useProducts();
   
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
@@ -337,71 +340,84 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* SIDEBAR OVERLAY (mobile) */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="fixed inset-y-0 left-0 z-20 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
         {/* LOGO */}
-        <div className="flex items-center gap-3 px-2 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-            <Layers className="h-5 w-5" />
+        <div className="flex items-center justify-between px-2 mb-8 h-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+              <Layers className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
+              <p className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold">UMKM Hub</p>
+            </div>
           </div>
-          <div>
-            <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
-            <p className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold">UMKM Hub</p>
-          </div>
+          <button className="lg:hidden text-[#64748B] hover:text-[#0F172A]" onClick={() => setIsSidebarOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
 
         {/* NAVIGATION MENUS */}
-        <nav className="flex-1 space-y-1.5 px-1">
-          <button 
-            onClick={() => handleTabChange('dashboard')}
+        <nav className="flex-1 space-y-1.5 px-1 overflow-y-auto">
+          <button
+            onClick={() => { handleTabChange('dashboard'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <TrendingUp className="h-4.5 w-4.5" />
             Dashboard
           </button>
-          
-          <button 
-            onClick={() => handleTabChange('group-buying')}
+
+          <button
+            onClick={() => { handleTabChange('group-buying'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'group-buying' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Users className="h-4.5 w-4.5" />
             Patungan Aktif
           </button>
 
-          <button 
-            onClick={() => handleTabChange('suppliers')}
+          <button
+            onClick={() => { handleTabChange('suppliers'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'suppliers' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Star className="h-4.5 w-4.5" />
             Cari Supplier
           </button>
 
-          <button 
-            onClick={() => handleTabChange('orders')}
+          <button
+            onClick={() => { handleTabChange('orders'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'orders' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <ShoppingCart className="h-4.5 w-4.5" />
             Pesanan Saya
           </button>
 
-          <button 
-            onClick={() => handleTabChange('ai-insight')}
+          <button
+            onClick={() => { handleTabChange('ai-insight'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'ai-insight' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Sliders className="h-4.5 w-4.5" />
             Analisis Bisnis
           </button>
 
-          <button 
-            onClick={() => handleTabChange('sirkel-score')}
+          <button
+            onClick={() => { handleTabChange('sirkel-score'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'sirkel-score' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <Award className="h-4.5 w-4.5" />
             SirkelScore
           </button>
 
-          <button 
-            onClick={() => handleTabChange('profile')}
+          <button
+            onClick={() => { handleTabChange('profile'); setIsSidebarOpen(false); }}
             className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'profile' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
           >
             <User className="h-4.5 w-4.5" />
@@ -431,20 +447,26 @@ export default function Dashboard() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <div className="flex-1 pl-64">
-        
+      <div className="flex-1 lg:pl-64 flex flex-col overflow-x-hidden min-h-screen">
+
         {/* TOP NAVBAR */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[#E2E8F0] bg-white/80 backdrop-blur-md px-8 shadow-sm">
-          {/* SEARCH BAR */}
-          <div className="relative w-96">
-            <Search className="absolute top-2.5 left-3.5 h-4.5 w-4.5 text-[#94A3B8]" />
-            <input 
-              type="text" 
-              placeholder="Cari bahan baku, supplier, atau patungan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] py-2 pl-10 pr-4 text-xs font-medium outline-none transition-all duration-200 focus:border-[#16A34A] focus:bg-white focus:ring-1 focus:ring-[#16A34A]/25"
-            />
+          <div className="flex items-center gap-4">
+            {/* HAMBURGER MENU (mobile) */}
+            <button className="lg:hidden text-[#64748B] hover:text-[#0F172A]" onClick={() => setIsSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
+            {/* SEARCH BAR */}
+            <div className="relative w-96 hidden sm:block">
+              <Search className="absolute top-2.5 left-3.5 h-4.5 w-4.5 text-[#94A3B8]" />
+              <input
+                type="text"
+                placeholder="Cari bahan baku, supplier, atau patungan..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] py-2 pl-10 pr-4 text-xs font-medium outline-none transition-all duration-200 focus:border-[#16A34A] focus:bg-white focus:ring-1 focus:ring-[#16A34A]/25"
+              />
+            </div>
           </div>
 
           {/* RIGHT ACTIONS */}
