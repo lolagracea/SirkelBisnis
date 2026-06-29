@@ -67,43 +67,64 @@ function cleanCityName(city) {
     return toTitleCase(city.replace(/^(KABUPATEN|KOTA)\s+/i, ""));
 }
 
-async function nominatimSearch(q) {
-    const url =
-        `https://nominatim.openstreetmap.org/search?` +
-        new URLSearchParams({ q, format: "json", limit: 1, countrycodes: "id" });
+function expandStreetName(street) {
+    if (!street) return street;
+    return street
+        .replace(/\bJl\.\s*/gi, "Jalan ")
+        .replace(/\bJln\.\s*/gi, "Jalan ")
+        .replace(/\bGg\.\s*/gi, "Gang ")
+        .replace(/\bNo\.\s*/gi, "No. ")
+        .trim();
+}
 
-    const res = await fetch(url, {
-        headers: { "Accept-Language": "id", "User-Agent": "SirkelBisnis/1.0" },
-    });
-    const data = await res.json();
-    if (data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function nominatimSearch(q, delayMs = 0) {
+    if (delayMs > 0) await sleep(delayMs);
+    try {
+        const url =
+            `https://nominatim.openstreetmap.org/search?` +
+            new URLSearchParams({ q, format: "json", limit: 1, countrycodes: "id" });
+
+        const res = await fetch(url, {
+            headers: { "Accept-Language": "id", "User-Agent": "SirkelBisnis/1.0" },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+            return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+        }
+    } catch {
+        // network error
     }
     return null;
 }
 
 async function geocodeAddress(streetAddress, kelurahan, kecamatan, city, province) {
-    const cityClean     = cleanCityName(city);
+    const street         = expandStreetName(streetAddress);
+    const cityClean      = cleanCityName(city);
     const kecamatanClean = toTitleCase(kecamatan);
     const kelurahanClean = toTitleCase(kelurahan);
     const provinceClean  = toTitleCase(province);
 
-    // Coba query paling spesifik dulu
-    const q1 = [streetAddress, kelurahanClean, kecamatanClean, cityClean, provinceClean, "Indonesia"]
-        .filter(Boolean).join(", ");
-    const r1 = await nominatimSearch(q1);
-    if (r1) return r1;
+    const queries = [
+        // Paling spesifik
+        [street, kelurahanClean, kecamatanClean, cityClean, provinceClean, "Indonesia"],
+        // Tanpa kelurahan
+        [street, kecamatanClean, cityClean, provinceClean, "Indonesia"],
+        // Hanya jalan + kota + provinsi
+        [street, cityClean, provinceClean, "Indonesia"],
+        // Hanya jalan + kota
+        [street, cityClean, "Indonesia"],
+    ];
 
-    // Fallback: tanpa kelurahan
-    const q2 = [streetAddress, kecamatanClean, cityClean, provinceClean, "Indonesia"]
-        .filter(Boolean).join(", ");
-    const r2 = await nominatimSearch(q2);
-    if (r2) return r2;
-
-    // Fallback: hanya jalan + kota + provinsi
-    const q3 = [streetAddress, cityClean, provinceClean, "Indonesia"]
-        .filter(Boolean).join(", ");
-    return await nominatimSearch(q3);
+    for (let i = 0; i < queries.length; i++) {
+        const q = queries[i].filter(Boolean).join(", ");
+        // delay 1.1 detik antar request agar tidak kena rate limit Nominatim
+        const result = await nominatimSearch(q, i > 0 ? 1100 : 0);
+        if (result) return result;
+    }
+    return null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -382,9 +403,10 @@ export default function Register() {
             let response;
 
             if (role === "umkm") {
-                // Gabungkan alamat lengkap dari semua komponen
                 const fullAddress = [
                     formData.street_address,
+                    formData.kelurahan,
+                    formData.kecamatan,
                     formData.district_city,
                     formData.province,
                     "Indonesia",
@@ -402,11 +424,12 @@ export default function Register() {
                     business_type: formData.business_type,
                     province: formData.province,
                     district_city: formData.district_city,
+                    kecamatan: formData.kecamatan,
+                    kelurahan: formData.kelurahan,
                     street_address: formData.street_address,
-                    business_address: fullAddress, // alamat gabungan
+                    business_address: fullAddress,
                     raw_material_category: formData.raw_material_category,
-                    monthly_need_estimate:
-                        parseInt(formData.monthly_need_estimate) || 0,
+                    monthly_need_estimate: parseInt(formData.monthly_need_estimate) || 0,
                     latitude: umkmMarker[0],
                     longitude: umkmMarker[1],
                 });
@@ -428,6 +451,7 @@ export default function Register() {
             if (response.success) setIsSuccessModalOpen(true);
         } catch (err) {
             if (err.response?.data?.errors) {
+                console.error('[422 errors]', err.response.data.errors);
                 const firstError = Object.values(
                     err.response.data.errors,
                 )[0][0];
