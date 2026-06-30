@@ -1,32 +1,32 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
-use App\Models\Chat;
 
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
 |--------------------------------------------------------------------------
 |
-| Hanya UMKM atau Supplier yang terlibat dalam sebuah chat yang boleh
-| subscribe ke channel chat tersebut.
+| Private channels untuk payment notification real-time.
+| Setiap channel divalidasi berdasarkan user_id yang sedang login.
 |
 */
 
-Broadcast::channel('chat.{chatId}', function ($user, $chatId) {
-    $chat = Chat::find($chatId);
+/**
+ * Channel UMKM — menerima notifikasi status payment dari Xendit.
+ * Format: private-umkm.{id}
+ * Listener di React: Echo.private(`umkm.${user.id}`).listen('.payment.paid', ...)
+ */
+Broadcast::channel('umkm.{id}', function ($user, int $id) {
+    // Izinkan akses hanya jika user yang request adalah user yang benar
+    return (int) $user->id === $id;
+});
 
-    if (! $chat) {
-        return false;
-    }
-
-    if ($user->isRole('umkm')) {
-        return $user->umkmProfile && $chat->umkm_id === $user->umkmProfile->id;
-    }
-
-    if ($user->isRole('supplier')) {
-        return $user->supplierProfile && $chat->supplier_id === $user->supplierProfile->id;
-    }
-
-    return false;
+/**
+ * Channel Supplier — menerima update saldo wallet secara real-time.
+ * Format: private-supplier.{id}
+ * Listener di React: Echo.private(`supplier.${user.id}`).listen('.payment.paid', ...)
+ */
+Broadcast::channel('supplier.{id}', function ($user, int $id) {
+    return (int) $user->id === $id;
 });
