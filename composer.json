@@ -12,7 +12,8 @@
         "laravel/reverb": "^1.10",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
-        "spatie/laravel-permission": "^8.0"
+        "spatie/laravel-permission": "^8.0",
+        "xendit/xendit-php": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

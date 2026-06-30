@@ -31,4 +31,44 @@ class CreditLimitController extends Controller
 
         return response()->json($limit, 201);
     }
+
+    // UMKM melihat limit kredit dari semua supplier yang sudah memberinya kredit
+    public function umkmIndex(Request $request)
+    {
+        $limits = CreditLimit::with('supplier.user')
+            ->where('umkm_id', $request->user()->umkm_profile->id)
+            ->get()
+            ->map(function ($limit) {
+                return [
+                    'id' => $limit->id,
+                    'supplier_name' => $limit->supplier?->business_name ?? $limit->supplier?->user?->name,
+                    'limit_amount' => $limit->limit_amount,
+                    'used_amount' => $limit->used_amount,
+                    'available_amount' => max(0, $limit->limit_amount - $limit->used_amount),
+                    'term_days' => $limit->term_days,
+                ];
+            });
+
+        return response()->json($limits);
+    }
+
+    // UMKM melihat limit kredit dari satu supplier spesifik (untuk ditampilkan saat checkout)
+    public function umkmShowForSupplier(Request $request, $supplierId)
+    {
+        $limit = CreditLimit::where('supplier_id', $supplierId)
+            ->where('umkm_id', $request->user()->umkm_profile->id)
+            ->first();
+
+        if (!$limit) {
+            return response()->json(['has_credit' => false]);
+        }
+
+        return response()->json([
+            'has_credit' => true,
+            'limit_amount' => $limit->limit_amount,
+            'used_amount' => $limit->used_amount,
+            'available_amount' => max(0, $limit->limit_amount - $limit->used_amount),
+            'term_days' => $limit->term_days,
+        ]);
+    }
 }

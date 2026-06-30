@@ -15,7 +15,13 @@ import {
     Loader2,
 } from "lucide-react";
 import Select from "react-select";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import {
+    MapContainer,
+    TileLayer,
+    Marker,
+    useMapEvents,
+    useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -55,6 +61,12 @@ function MapFlyTo({ coords }) {
     return null;
 }
 
+// ── Komponen: klik peta untuk set marker ──────────────────────────────────
+function MapClickHandler({ onMapClick }) {
+    useMapEvents({ click: (e) => onMapClick([e.latlng.lat, e.latlng.lng]) });
+    return null;
+}
+
 // ── Geocoding via Nominatim (OpenStreetMap, gratis) ───────────────────────
 function toTitleCase(str) {
     if (!str) return str;
@@ -84,15 +96,27 @@ async function nominatimSearch(q, delayMs = 0) {
     try {
         const url =
             `https://nominatim.openstreetmap.org/search?` +
-            new URLSearchParams({ q, format: "json", limit: 1, countrycodes: "id" });
+            new URLSearchParams({
+                q,
+                format: "json",
+                limit: 1,
+                countrycodes: "id",
+            });
 
         const res = await fetch(url, {
-            headers: { "Accept-Language": "id", "User-Agent": "SirkelBisnis/1.0" },
+            headers: {
+                "Accept-Language": "id",
+                "User-Agent": "SirkelBisnis/1.0",
+            },
         });
         if (!res.ok) return null;
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-            return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+            return {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon),
+                display: data[0].display_name,
+            };
         }
     } catch {
         // network error
@@ -100,16 +124,29 @@ async function nominatimSearch(q, delayMs = 0) {
     return null;
 }
 
-async function geocodeAddress(streetAddress, kelurahan, kecamatan, city, province) {
-    const street         = expandStreetName(streetAddress);
-    const cityClean      = cleanCityName(city);
+async function geocodeAddress(
+    streetAddress,
+    kelurahan,
+    kecamatan,
+    city,
+    province,
+) {
+    const street = expandStreetName(streetAddress);
+    const cityClean = cleanCityName(city);
     const kecamatanClean = toTitleCase(kecamatan);
     const kelurahanClean = toTitleCase(kelurahan);
-    const provinceClean  = toTitleCase(province);
+    const provinceClean = toTitleCase(province);
 
     const queries = [
         // Paling spesifik
-        [street, kelurahanClean, kecamatanClean, cityClean, provinceClean, "Indonesia"],
+        [
+            street,
+            kelurahanClean,
+            kecamatanClean,
+            cityClean,
+            provinceClean,
+            "Indonesia",
+        ],
         // Tanpa kelurahan
         [street, kecamatanClean, cityClean, provinceClean, "Indonesia"],
         // Hanya jalan + kota + provinsi
@@ -154,7 +191,11 @@ export default function Register() {
         monthly_need_estimate: "",
         // Supplier
         supplier_name: "",
-        address: "",
+        supplier_province: "",
+        supplier_district_city: "",
+        supplier_kecamatan: "",
+        supplier_kelurahan: "",
+        supplier_street_address: "",
         description: "",
     });
 
@@ -163,7 +204,21 @@ export default function Register() {
     const [supplierMarker, setSupplierMarker] = useState(null);
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeError, setGeocodeError] = useState("");
-    const [geocodeDisplay, setGeocodeDisplay] = useState(""); // nama lokasi hasil geocode
+    const [geocodeDisplay, setGeocodeDisplay] = useState("");
+    const [supplierGeocoding, setSupplierGeocoding] = useState(false);
+    const [supplierGeocodeError, setSupplierGeocodeError] = useState("");
+    const [supplierGeocodeDisplay, setSupplierGeocodeDisplay] = useState("");
+    const [supplierCities, setSupplierCities] = useState([]);
+    const [supplierKecamatans, setSupplierKecamatans] = useState([]);
+    const [supplierKelurahans, setSupplierKelurahans] = useState([]);
+    const [loadingSupplierCities, setLoadingSupplierCities] = useState(false);
+    const [loadingSupplierKecamatans, setLoadingSupplierKecamatans] =
+        useState(false);
+    const [loadingSupplierKelurahans, setLoadingSupplierKelurahans] =
+        useState(false);
+    const [selectedSupplierCityId, setSelectedSupplierCityId] = useState(null);
+    const [selectedSupplierKecamatanId, setSelectedSupplierKecamatanId] =
+        useState(null);
 
     // ── Reference data ────────────────────────────────────────────────────
     const [provinces, setProvinces] = useState([]);
@@ -198,14 +253,22 @@ export default function Register() {
                 if (provRes.ok) {
                     const d = await provRes.json();
                     if (Array.isArray(d.data)) {
-                        setProvinces(d.data.map((p) => ({ value: p, label: toTitleCase(p) })));
+                        setProvinces(
+                            d.data.map((p) => ({
+                                value: p,
+                                label: toTitleCase(p),
+                            })),
+                        );
                     }
                 }
                 if (typesRes.ok) {
                     const d = await typesRes.json();
                     if (Array.isArray(d.data)) {
                         setBusinessTypes(
-                            d.data.map((b) => ({ value: b.name, label: b.name })),
+                            d.data.map((b) => ({
+                                value: b.name,
+                                label: b.name,
+                            })),
                         );
                     }
                 }
@@ -219,7 +282,7 @@ export default function Register() {
         fetchInit();
     }, []);
 
-    // Fetch kota saat provinsi berubah
+    // Fetch kota saat provinsi UMKM berubah
     useEffect(() => {
         if (!formData.province) {
             setCities([]);
@@ -232,7 +295,12 @@ export default function Register() {
 
         const fetchCities = async () => {
             setLoadingCities(true);
-            setFormData((prev) => ({ ...prev, district_city: "", kecamatan: "", kelurahan: "" }));
+            setFormData((prev) => ({
+                ...prev,
+                district_city: "",
+                kecamatan: "",
+                kelurahan: "",
+            }));
             setKecamatans([]);
             setKelurahans([]);
             setSelectedCityId(null);
@@ -243,8 +311,13 @@ export default function Register() {
                 );
                 if (res.ok) {
                     const d = await res.json();
-                    // simpan id agar bisa fetch kecamatan
-                    setCities(d.data.map((c) => ({ value: c.name, label: toTitleCase(c.name), id: c.id })));
+                    setCities(
+                        d.data.map((c) => ({
+                            value: c.name,
+                            label: toTitleCase(c.name),
+                            id: c.id,
+                        })),
+                    );
                 }
             } catch (e) {
                 console.error(e);
@@ -255,7 +328,7 @@ export default function Register() {
         fetchCities();
     }, [formData.province]);
 
-    // Fetch kecamatan saat kota berubah
+    // Fetch kecamatan saat kota UMKM berubah
     useEffect(() => {
         if (!selectedCityId) {
             setKecamatans([]);
@@ -270,10 +343,18 @@ export default function Register() {
             setKelurahans([]);
             setSelectedKecamatanId(null);
             try {
-                const res = await fetch(`/api/kecamatan?city_id=${selectedCityId}`);
+                const res = await fetch(
+                    `/api/kecamatan?city_id=${selectedCityId}`,
+                );
                 if (res.ok) {
                     const d = await res.json();
-                    setKecamatans(d.data.map((k) => ({ value: k.name, label: toTitleCase(k.name), id: k.id })));
+                    setKecamatans(
+                        d.data.map((k) => ({
+                            value: k.name,
+                            label: toTitleCase(k.name),
+                            id: k.id,
+                        })),
+                    );
                 }
             } catch (e) {
                 console.error(e);
@@ -284,7 +365,7 @@ export default function Register() {
         fetchKecamatan();
     }, [selectedCityId]);
 
-    // Fetch kelurahan saat kecamatan berubah
+    // Fetch kelurahan saat kecamatan UMKM berubah
     useEffect(() => {
         if (!selectedKecamatanId) {
             setKelurahans([]);
@@ -295,10 +376,17 @@ export default function Register() {
             setLoadingKelurahans(true);
             setFormData((prev) => ({ ...prev, kelurahan: "" }));
             try {
-                const res = await fetch(`/api/kelurahan?kecamatan_id=${selectedKecamatanId}`);
+                const res = await fetch(
+                    `/api/kelurahan?kecamatan_id=${selectedKecamatanId}`,
+                );
                 if (res.ok) {
                     const d = await res.json();
-                    setKelurahans(d.data.map((k) => ({ value: k.name, label: toTitleCase(k.name) })));
+                    setKelurahans(
+                        d.data.map((k) => ({
+                            value: k.name,
+                            label: toTitleCase(k.name),
+                        })),
+                    );
                 }
             } catch (e) {
                 console.error(e);
@@ -309,14 +397,135 @@ export default function Register() {
         fetchKelurahan();
     }, [selectedKecamatanId]);
 
+    // ── Cascade supplier (provinsi → kota → kecamatan → kelurahan) ────────
+    useEffect(() => {
+        if (!formData.supplier_province) {
+            setSupplierCities([]);
+            setSupplierKecamatans([]);
+            setSupplierKelurahans([]);
+            setSelectedSupplierCityId(null);
+            setSelectedSupplierKecamatanId(null);
+            return;
+        }
+
+        const fetchSupplierCities = async () => {
+            setLoadingSupplierCities(true);
+            setFormData((prev) => ({
+                ...prev,
+                supplier_district_city: "",
+                supplier_kecamatan: "",
+                supplier_kelurahan: "",
+            }));
+            setSupplierKecamatans([]);
+            setSupplierKelurahans([]);
+            setSelectedSupplierCityId(null);
+            setSelectedSupplierKecamatanId(null);
+            try {
+                const res = await fetch(
+                    `/api/kota-kabupaten/provinsi?province=${encodeURIComponent(formData.supplier_province)}`,
+                );
+                if (res.ok) {
+                    const d = await res.json();
+                    setSupplierCities(
+                        d.data.map((c) => ({
+                            value: c.name,
+                            label: toTitleCase(c.name),
+                            id: c.id,
+                        })),
+                    );
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoadingSupplierCities(false);
+            }
+        };
+        fetchSupplierCities();
+    }, [formData.supplier_province]);
+
+    useEffect(() => {
+        if (!selectedSupplierCityId) {
+            setSupplierKecamatans([]);
+            setSupplierKelurahans([]);
+            setSelectedSupplierKecamatanId(null);
+            return;
+        }
+
+        const fetchSupplierKecamatan = async () => {
+            setLoadingSupplierKecamatans(true);
+            setFormData((prev) => ({
+                ...prev,
+                supplier_kecamatan: "",
+                supplier_kelurahan: "",
+            }));
+            setSupplierKelurahans([]);
+            setSelectedSupplierKecamatanId(null);
+            try {
+                const res = await fetch(
+                    `/api/kecamatan?city_id=${selectedSupplierCityId}`,
+                );
+                if (res.ok) {
+                    const d = await res.json();
+                    setSupplierKecamatans(
+                        d.data.map((k) => ({
+                            value: k.name,
+                            label: toTitleCase(k.name),
+                            id: k.id,
+                        })),
+                    );
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoadingSupplierKecamatans(false);
+            }
+        };
+        fetchSupplierKecamatan();
+    }, [selectedSupplierCityId]);
+
+    useEffect(() => {
+        if (!selectedSupplierKecamatanId) {
+            setSupplierKelurahans([]);
+            return;
+        }
+
+        const fetchSupplierKelurahan = async () => {
+            setLoadingSupplierKelurahans(true);
+            setFormData((prev) => ({ ...prev, supplier_kelurahan: "" }));
+            try {
+                const res = await fetch(
+                    `/api/kelurahan?kecamatan_id=${selectedSupplierKecamatanId}`,
+                );
+                if (res.ok) {
+                    const d = await res.json();
+                    setSupplierKelurahans(
+                        d.data.map((k) => ({
+                            value: k.name,
+                            label: toTitleCase(k.name),
+                        })),
+                    );
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoadingSupplierKelurahans(false);
+            }
+        };
+        fetchSupplierKelurahan();
+    }, [selectedSupplierKecamatanId]);
+
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-        // Kalau user edit alamat jalan, reset marker supaya tidak stale
         if (name === "street_address") {
             setUmkmMarker(null);
             setGeocodeDisplay("");
             setGeocodeError("");
+        }
+        if (name === "supplier_street_address") {
+            setSupplierMarker(null);
+            setSupplierGeocodeDisplay("");
+            setSupplierGeocodeError("");
         }
     }, []);
 
@@ -329,11 +538,17 @@ export default function Register() {
             if (field === "kecamatan") {
                 setSelectedKecamatanId(opt ? opt.id : null);
             }
+            if (field === "supplier_district_city") {
+                setSelectedSupplierCityId(opt ? opt.id : null);
+            }
+            if (field === "supplier_kecamatan") {
+                setSelectedSupplierKecamatanId(opt ? opt.id : null);
+            }
         },
         [],
     );
 
-    // ── Geocoding: gabung semua field alamat → cari di peta ──────────────
+    // ── Geocoding UMKM: gabung semua field alamat → cari di peta ─────────
     const handleCariDiPeta = async () => {
         if (!formData.street_address) {
             setGeocodeError("Isi alamat jalan terlebih dahulu.");
@@ -376,6 +591,49 @@ export default function Register() {
         }
     };
 
+    // ── Geocoding Supplier: gabung semua field alamat → cari di peta ─────
+    const handleCariDiPetaSupplier = async () => {
+        if (!formData.supplier_street_address) {
+            setSupplierGeocodeError("Isi alamat jalan terlebih dahulu.");
+            return;
+        }
+        if (!formData.supplier_district_city && !formData.supplier_province) {
+            setSupplierGeocodeError(
+                "Pilih provinsi dan kota/kabupaten terlebih dahulu.",
+            );
+            return;
+        }
+
+        setSupplierGeocoding(true);
+        setSupplierGeocodeError("");
+        setSupplierGeocodeDisplay("");
+
+        try {
+            const result = await geocodeAddress(
+                formData.supplier_street_address,
+                formData.supplier_kelurahan,
+                formData.supplier_kecamatan,
+                formData.supplier_district_city,
+                formData.supplier_province,
+            );
+
+            if (result) {
+                setSupplierMarker([result.lat, result.lng]);
+                setSupplierGeocodeDisplay(result.display);
+            } else {
+                setSupplierGeocodeError(
+                    "Lokasi tidak ditemukan. Coba perjelas alamat jalan (contoh: Jl. Industri No. 5).",
+                );
+            }
+        } catch {
+            setSupplierGeocodeError(
+                "Gagal menghubungi layanan peta. Periksa koneksi internet Anda.",
+            );
+        } finally {
+            setSupplierGeocoding(false);
+        }
+    };
+
     // ── Submit ─────────────────────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -393,7 +651,7 @@ export default function Register() {
         }
         if (role === "supplier" && !supplierMarker) {
             setError(
-                "Silakan tandai lokasi gudang/toko Anda di peta sebelum mendaftar.",
+                "Silakan cari lokasi gudang/toko Anda di peta sebelum mendaftar.",
             );
             return;
         }
@@ -429,11 +687,23 @@ export default function Register() {
                     street_address: formData.street_address,
                     business_address: fullAddress,
                     raw_material_category: formData.raw_material_category,
-                    monthly_need_estimate: parseInt(formData.monthly_need_estimate) || 0,
+                    monthly_need_estimate:
+                        parseInt(formData.monthly_need_estimate) || 0,
                     latitude: umkmMarker[0],
                     longitude: umkmMarker[1],
                 });
             } else {
+                const fullAddress = [
+                    formData.supplier_street_address,
+                    formData.supplier_kelurahan,
+                    formData.supplier_kecamatan,
+                    formData.supplier_district_city,
+                    formData.supplier_province,
+                    "Indonesia",
+                ]
+                    .filter(Boolean)
+                    .join(", ");
+
                 response = await registerSupplier({
                     name: formData.name,
                     nik: formData.nik,
@@ -441,7 +711,12 @@ export default function Register() {
                     password: formData.password,
                     password_confirmation: formData.password_confirmation,
                     supplier_name: formData.supplier_name,
-                    address: formData.address,
+                    province: formData.supplier_province,
+                    district_city: formData.supplier_district_city,
+                    kecamatan: formData.supplier_kecamatan,
+                    kelurahan: formData.supplier_kelurahan,
+                    street_address: formData.supplier_street_address,
+                    address: fullAddress,
                     description: formData.description,
                     latitude: supplierMarker[0],
                     longitude: supplierMarker[1],
@@ -451,7 +726,7 @@ export default function Register() {
             if (response.success) setIsSuccessModalOpen(true);
         } catch (err) {
             if (err.response?.data?.errors) {
-                console.error('[422 errors]', err.response.data.errors);
+                console.error("[422 errors]", err.response.data.errors);
                 const firstError = Object.values(
                     err.response.data.errors,
                 )[0][0];
@@ -473,7 +748,11 @@ export default function Register() {
             {/* ── Header ── */}
             <div className="sm:mx-auto sm:w-full sm:max-w-xl">
                 <div className="flex justify-center items-center gap-3 mb-6">
-                    <img src="/logo.png" alt="SirkelBisnis" className="h-12 w-12 rounded-2xl object-cover object-top bg-white shadow-md" />
+                    <img
+                        src="/logo.png"
+                        alt="SirkelBisnis"
+                        className="h-12 w-12 rounded-2xl object-cover object-top bg-white shadow-md"
+                    />
                     <span className="font-extrabold text-2xl tracking-tight text-[#0F172A]">
                         Sirkel<span className="text-[#16A34A]">Bisnis</span>
                     </span>
@@ -679,7 +958,7 @@ export default function Register() {
                                     </div>
                                 </div>
 
-                                {/* ── Blok Alamat + Peta ── */}
+                                {/* ── Blok Alamat + Peta UMKM ── */}
                                 <div className="rounded-2xl border border-[#E2E8F0] p-4 space-y-4 bg-[#FAFAFA]">
                                     <div className="flex items-center gap-2 mb-1">
                                         <MapPin className="h-4 w-4 text-[#16A34A]" />
@@ -718,15 +997,29 @@ export default function Register() {
                                     <div>
                                         <label className={labelCls}>
                                             Kabupaten / Kota{" "}
-                                            <span className="text-red-500">*</span>
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <Select
                                             options={cities}
                                             isLoading={loadingCities}
                                             isDisabled={!formData.province}
-                                            placeholder={formData.province ? "Pilih Kab/Kota" : "Pilih provinsi dahulu"}
-                                            value={cities.find((o) => o.value === formData.district_city) || null}
-                                            onChange={handleSelectChange("district_city")}
+                                            placeholder={
+                                                formData.province
+                                                    ? "Pilih Kab/Kota"
+                                                    : "Pilih provinsi dahulu"
+                                            }
+                                            value={
+                                                cities.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.district_city,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "district_city",
+                                            )}
                                             styles={selectStyles}
                                         />
                                     </div>
@@ -735,15 +1028,29 @@ export default function Register() {
                                     <div>
                                         <label className={labelCls}>
                                             Kecamatan{" "}
-                                            <span className="text-red-500">*</span>
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <Select
                                             options={kecamatans}
                                             isLoading={loadingKecamatans}
                                             isDisabled={!formData.district_city}
-                                            placeholder={formData.district_city ? "Pilih Kecamatan" : "Pilih kab/kota dahulu"}
-                                            value={kecamatans.find((o) => o.value === formData.kecamatan) || null}
-                                            onChange={handleSelectChange("kecamatan")}
+                                            placeholder={
+                                                formData.district_city
+                                                    ? "Pilih Kecamatan"
+                                                    : "Pilih kab/kota dahulu"
+                                            }
+                                            value={
+                                                kecamatans.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.kecamatan,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "kecamatan",
+                                            )}
                                             styles={selectStyles}
                                         />
                                     </div>
@@ -752,15 +1059,29 @@ export default function Register() {
                                     <div>
                                         <label className={labelCls}>
                                             Kelurahan / Desa{" "}
-                                            <span className="text-red-500">*</span>
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
                                         </label>
                                         <Select
                                             options={kelurahans}
                                             isLoading={loadingKelurahans}
                                             isDisabled={!formData.kecamatan}
-                                            placeholder={formData.kecamatan ? "Pilih Kelurahan/Desa" : "Pilih kecamatan dahulu"}
-                                            value={kelurahans.find((o) => o.value === formData.kelurahan) || null}
-                                            onChange={handleSelectChange("kelurahan")}
+                                            placeholder={
+                                                formData.kecamatan
+                                                    ? "Pilih Kelurahan/Desa"
+                                                    : "Pilih kecamatan dahulu"
+                                            }
+                                            value={
+                                                kelurahans.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.kelurahan,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "kelurahan",
+                                            )}
                                             styles={selectStyles}
                                         />
                                     </div>
@@ -870,13 +1191,12 @@ export default function Register() {
                                 </div>
                             </div>
                         ) : (
-                            /* ── Seksi Supplier (tidak berubah dari sebelumnya) ── */
                             <div className="space-y-4">
                                 <h3 className="font-extrabold text-xs text-[#64748B] uppercase tracking-wider">
                                     Informasi Profil Supplier
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="md:col-span-2">
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
                                         <label className={labelCls}>
                                             Nama Supplier / Perusahaan
                                         </label>
@@ -889,20 +1209,7 @@ export default function Register() {
                                             placeholder="Contoh: CV Tani Makmur"
                                         />
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className={labelCls}>
-                                            Alamat Lengkap Gudang / Toko
-                                        </label>
-                                        <input
-                                            name="address"
-                                            required
-                                            value={formData.address}
-                                            onChange={handleChange}
-                                            className={inputCls}
-                                            placeholder="Alamat pergudangan/kantor..."
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
+                                    <div>
                                         <label className={labelCls}>
                                             Deskripsi Supplier
                                         </label>
@@ -915,6 +1222,254 @@ export default function Register() {
                                             placeholder="Menyediakan bahan pangan berkualitas..."
                                         />
                                     </div>
+                                </div>
+
+                                {/* ── Blok Alamat + Peta Supplier ── */}
+                                <div className="rounded-2xl border border-[#E2E8F0] p-4 space-y-4 bg-[#FAFAFA]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <MapPin className="h-4 w-4 text-[#16A34A]" />
+                                        <span className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
+                                            Lokasi Gudang / Toko
+                                        </span>
+                                    </div>
+
+                                    {/* Provinsi */}
+                                    <div>
+                                        <label className={labelCls}>
+                                            Provinsi{" "}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </label>
+                                        <Select
+                                            options={provinces}
+                                            isLoading={loadingProvinces}
+                                            placeholder="Pilih Provinsi"
+                                            value={
+                                                provinces.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.supplier_province,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "supplier_province",
+                                            )}
+                                            styles={selectStyles}
+                                        />
+                                    </div>
+
+                                    {/* Kab/Kota */}
+                                    <div>
+                                        <label className={labelCls}>
+                                            Kabupaten / Kota{" "}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </label>
+                                        <Select
+                                            options={supplierCities}
+                                            isLoading={loadingSupplierCities}
+                                            isDisabled={
+                                                !formData.supplier_province
+                                            }
+                                            placeholder={
+                                                formData.supplier_province
+                                                    ? "Pilih Kab/Kota"
+                                                    : "Pilih provinsi dahulu"
+                                            }
+                                            value={
+                                                supplierCities.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.supplier_district_city,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "supplier_district_city",
+                                            )}
+                                            styles={selectStyles}
+                                        />
+                                    </div>
+
+                                    {/* Kecamatan */}
+                                    <div>
+                                        <label className={labelCls}>
+                                            Kecamatan{" "}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </label>
+                                        <Select
+                                            options={supplierKecamatans}
+                                            isLoading={
+                                                loadingSupplierKecamatans
+                                            }
+                                            isDisabled={
+                                                !formData.supplier_district_city
+                                            }
+                                            placeholder={
+                                                formData.supplier_district_city
+                                                    ? "Pilih Kecamatan"
+                                                    : "Pilih kab/kota dahulu"
+                                            }
+                                            value={
+                                                supplierKecamatans.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.supplier_kecamatan,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "supplier_kecamatan",
+                                            )}
+                                            styles={selectStyles}
+                                        />
+                                    </div>
+
+                                    {/* Kelurahan / Desa */}
+                                    <div>
+                                        <label className={labelCls}>
+                                            Kelurahan / Desa{" "}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </label>
+                                        <Select
+                                            options={supplierKelurahans}
+                                            isLoading={
+                                                loadingSupplierKelurahans
+                                            }
+                                            isDisabled={
+                                                !formData.supplier_kecamatan
+                                            }
+                                            placeholder={
+                                                formData.supplier_kecamatan
+                                                    ? "Pilih Kelurahan/Desa"
+                                                    : "Pilih kecamatan dahulu"
+                                            }
+                                            value={
+                                                supplierKelurahans.find(
+                                                    (o) =>
+                                                        o.value ===
+                                                        formData.supplier_kelurahan,
+                                                ) || null
+                                            }
+                                            onChange={handleSelectChange(
+                                                "supplier_kelurahan",
+                                            )}
+                                            styles={selectStyles}
+                                        />
+                                    </div>
+
+                                    {/* Alamat Jalan */}
+                                    <div>
+                                        <label className={labelCls}>
+                                            Alamat Jalan{" "}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                name="supplier_street_address"
+                                                required
+                                                value={
+                                                    formData.supplier_street_address
+                                                }
+                                                onChange={handleChange}
+                                                className={`${inputCls} flex-1`}
+                                                placeholder="Contoh: Jl. Industri No. 5"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleCariDiPetaSupplier
+                                                }
+                                                disabled={
+                                                    supplierGeocoding ||
+                                                    !formData.supplier_street_address
+                                                }
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#15803D] transition-colors shrink-0"
+                                            >
+                                                {supplierGeocoding ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                ) : (
+                                                    <Search className="h-3.5 w-3.5" />
+                                                )}
+                                                {supplierGeocoding
+                                                    ? "Mencari..."
+                                                    : "Cari di Peta"}
+                                            </button>
+                                        </div>
+                                        <p className="text-[11px] text-[#6B7280] mt-1">
+                                            Tulis alamat jalan lalu klik{" "}
+                                            <strong>Cari di Peta</strong> untuk
+                                            menampilkan lokasi secara otomatis.
+                                        </p>
+                                    </div>
+
+                                    {/* Pesan error geocoding */}
+                                    {supplierGeocodeError && (
+                                        <div className="flex items-start gap-2 text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                                            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                            {supplierGeocodeError}
+                                        </div>
+                                    )}
+
+                                    {/* Peta */}
+                                    <div className="rounded-xl overflow-hidden border border-[#E2E8F0]">
+                                        <MapContainer
+                                            center={[-2.5, 118]}
+                                            zoom={5}
+                                            style={{
+                                                height: "260px",
+                                                width: "100%",
+                                            }}
+                                            scrollWheelZoom={false}
+                                        >
+                                            <TileLayer
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            />
+                                            {supplierMarker && (
+                                                <MapFlyTo
+                                                    coords={supplierMarker}
+                                                />
+                                            )}
+                                            {supplierMarker && (
+                                                <Marker
+                                                    position={supplierMarker}
+                                                />
+                                            )}
+                                        </MapContainer>
+                                    </div>
+
+                                    {/* Status lokasi */}
+                                    {supplierMarker ? (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-[11px] text-green-600 font-semibold">
+                                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                                Lokasi berhasil ditemukan
+                                            </div>
+                                            {supplierGeocodeDisplay && (
+                                                <p className="text-[11px] text-[#6B7280] leading-relaxed pl-5">
+                                                    {supplierGeocodeDisplay}
+                                                </p>
+                                            )}
+                                            <p className="text-[11px] text-[#9CA3AF] pl-5">
+                                                Koordinat:{" "}
+                                                {supplierMarker[0].toFixed(6)},{" "}
+                                                {supplierMarker[1].toFixed(6)}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-[11px] text-amber-600">
+                                            <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                            Belum ada lokasi — isi alamat lalu
+                                            klik Cari di Peta.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
