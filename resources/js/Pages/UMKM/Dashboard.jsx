@@ -7,6 +7,7 @@ import useOrders from '../../hooks/useOrders';
 import useAIInsight from '../../hooks/useAIInsight';
 import useProducts from '../../hooks/useProducts';
 import supplierService from '../../services/supplierService';
+import productService from '../../services/productService';
 import useConfirmPopup from '../../hooks/useConfirmPopup';
 import ConfirmModal from '../../components/ConfirmModal';
 import { 
@@ -104,6 +105,13 @@ export default function Dashboard() {
   const [isPatunganModalOpen, setIsPatunganModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  // Products belonging to the supplier shown in the "Lihat Supplier" modal.
+  // Fetched directly from the server (filtered by supplier_id) instead of
+  // relying on the globally-loaded `products` list, which is paginated to
+  // only the first 10 products overall and may not include this supplier's
+  // newest items.
+  const [supplierProducts, setSupplierProducts] = useState([]);
+  const [supplierProductsLoading, setSupplierProductsLoading] = useState(false);
   
   // Form States
   const [beliQty, setBeliQty] = useState(50);
@@ -113,6 +121,56 @@ export default function Dashboard() {
   const [patunganDeadlineDays, setPatunganDeadlineDays] = useState(3);
   
   const [actionProcessing, setActionProcessing] = useState(false);
+
+  // Fetch all products belonging to a specific supplier directly from the
+  // server, so newly added products always show up regardless of where
+  // they fall in the global products pagination.
+  const fetchSupplierProducts = async (supplierId) => {
+    setSupplierProductsLoading(true);
+    try {
+      const res = await productService.getProducts({ supplier_id: supplierId, per_page: 100 });
+      const list = Array.isArray(res) ? res : (res.data || []);
+      setSupplierProducts(list);
+    } catch (err) {
+      console.error('Supplier products error:', err);
+      setSupplierProducts([]);
+    } finally {
+      setSupplierProductsLoading(false);
+    }
+  };
+
+  const openSupplierModal = (s) => {
+    setSelectedSupplier(s);
+    setIsSupplierModalOpen(true);
+    fetchSupplierProducts(s.id);
+  };
+
+  // Fetch suppliers from the backend, optionally filtered by a search keyword.
+  // Always asks the server for a generous page size so newly registered
+  // suppliers (which may not be among the first 10 by id) are included.
+  const fetchSuppliers = async (search = '') => {
+    try {
+      const res = await supplierService.getSuppliers({ search, per_page: 50 });
+      const list = Array.isArray(res) ? res : (res.data || []);
+      const mapped = list.map(s => {
+        const distanceVal = ((s.id * 4) % 12) + 1;
+        return {
+          id: s.id,
+          supplier_name: s.supplier_name,
+          description: s.description || 'Penyedia bahan baku terpercaya.',
+          address: s.address || 'Alamat tidak tersedia.',
+          rating: parseFloat(s.rating || 5.0),
+          sirkel_score: parseInt(s.sirkel_score || 90),
+          distance: `${distanceVal} km`,
+          top_product: 'Bahan Baku Unggulan',
+          badge: s.sirkel_score >= 90 ? 'Elite Supplier' : 'Trusted Supplier'
+        };
+      });
+      setSuppliers(mapped);
+    } catch (err) {
+      console.error('Suppliers error:', err);
+    }
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -126,24 +184,7 @@ export default function Dashboard() {
           fetchBusinessInsight().then(data => {
             if (data) setAiInsight(data);
           }).catch(err => console.error('AI Insight error:', err)),
-          supplierService.getSuppliers().then(res => {
-            const list = Array.isArray(res) ? res : (res.data || []);
-            const mapped = list.map(s => {
-              const distanceVal = ((s.id * 4) % 12) + 1;
-              return {
-                id: s.id,
-                supplier_name: s.supplier_name,
-                description: s.description || 'Penyedia bahan baku terpercaya.',
-                address: s.address || 'Alamat tidak tersedia.',
-                rating: parseFloat(s.rating || 5.0),
-                sirkel_score: parseInt(s.sirkel_score || 90),
-                distance: `${distanceVal} km`,
-                top_product: 'Bahan Baku Unggulan',
-                badge: s.sirkel_score >= 90 ? 'Elite Supplier' : 'Trusted Supplier'
-              };
-            });
-            setSuppliers(mapped);
-          }).catch(err => console.error('Suppliers error:', err))
+          fetchSuppliers()
         ]);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -153,6 +194,16 @@ export default function Dashboard() {
     };
     loadAllData();
   }, [fetchGroupBuyings, fetchMyOrders, fetchProducts, fetchBusinessInsight]);
+
+  // Re-fetch suppliers from the server whenever the search query changes,
+  // instead of only filtering the first page that was loaded on mount.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchSuppliers(searchQuery);
+    }, 350);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   // Tab change with premium fake loader effect
   const handleTabChange = (tabName) => {
@@ -337,11 +388,9 @@ export default function Dashboard() {
     };
   });
 
-  // Filtered lists based on search query
-  const recommendedSuppliers = suppliers.filter(s => 
-    s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.top_product && s.top_product.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Suppliers are now filtered server-side (see fetchSuppliers), so we use
+  // the fetched list as-is here instead of re-filtering only the first page.
+  const recommendedSuppliers = suppliers;
 
   const filteredGroupBuying = activeGroupBuying.filter(c => {
     const matchesSearch = c.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1065,7 +1114,7 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between border-t border-[#F1F5F9] pt-4 mt-2">
                           <span className="text-xs text-[#64748B] flex items-center gap-1"><MapPin className="h-4 w-4" /> {s.distance}</span>
                           <button 
-                            onClick={() => { setSelectedSupplier(s); setIsSupplierModalOpen(true); }}
+                            onClick={() => openSupplierModal(s)}
                             className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
                           >
                             Lihat Supplier
@@ -1505,17 +1554,21 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <h4 className="font-extrabold text-sm text-[#0F172A]">Bahan Baku yang Dijual</h4>
                 <span className="text-[10px] text-[#94A3B8] font-bold uppercase">
-                  {products.filter(p => p.supplier_id === selectedSupplier.id).length} Produk Terdaftar
+                  {supplierProducts.length} Produk Terdaftar
                 </span>
               </div>
 
-              {products.filter(p => p.supplier_id === selectedSupplier.id).length === 0 ? (
+              {supplierProductsLoading ? (
+                <div className="rounded-3xl border border-dashed border-[#E2E8F0] p-8 text-center text-xs text-[#94A3B8] font-bold">
+                  Memuat produk...
+                </div>
+              ) : supplierProducts.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-[#E2E8F0] p-8 text-center text-xs text-[#94A3B8] font-bold">
                   Belum ada produk terdaftar dari supplier ini.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {products.filter(p => p.supplier_id === selectedSupplier.id).map(prod => (
+                  {supplierProducts.map(prod => (
                     <div key={prod.id} className="rounded-3xl border border-[#E2E8F0] bg-white p-4 space-y-3 hover:shadow-md transition duration-200 flex flex-col justify-between">
                       <div className="space-y-2">
                         <div className="aspect-video w-full rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden relative">

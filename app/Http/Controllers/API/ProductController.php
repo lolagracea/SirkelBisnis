@@ -23,6 +23,11 @@ class ProductController extends Controller
         try {
             $query = Product::with(['supplier', 'variants', 'tierPrices']);
 
+            // Filter by supplier
+            if ($request->filled('supplier_id')) {
+                $query->where('supplier_id', $request->query('supplier_id'));
+            }
+
             // Search by name
             if ($request->has('name')) {
                 $query->where('name', 'like', '%' . $request->query('name') . '%');
@@ -33,7 +38,11 @@ class ProductController extends Controller
                 $query->where('category', 'like', '%' . $request->query('category') . '%');
             }
 
-            $products = $query->paginate(10);
+            // Allow caller to control page size (default 10, capped at 100)
+            $perPage = (int) $request->query('per_page', 10);
+            $perPage = $perPage > 0 ? min($perPage, 100) : 10;
+
+            $products = $query->paginate($perPage);
             $resource = ProductResource::collection($products);
             $responseData = $resource->response()->getData(true);
 

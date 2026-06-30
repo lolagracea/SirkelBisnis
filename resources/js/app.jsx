@@ -83,7 +83,20 @@ function MainApp() {
 
 const container = document.getElementById('app');
 if (container) {
-  const root = createRoot(container);
+  // Vite's HMR re-executes this module on every save while the dev server
+  // is running. Calling createRoot(container) again on a container that
+  // already has a root attached causes React to manage two separate fiber
+  // trees over the same DOM nodes, which then throws
+  // "Failed to execute 'removeChild' on 'Node'" once one of the roots
+  // tries to clean up nodes the other root already removed/replaced.
+  // We cache the root on the container itself so HMR re-runs reuse the
+  // existing root (just calling .render() again) instead of creating a
+  // brand new one.
+  if (!container.__sirkelReactRoot) {
+    container.__sirkelReactRoot = createRoot(container);
+  }
+  const root = container.__sirkelReactRoot;
+
   root.render(
     <React.StrictMode>
       <BrowserRouter>
@@ -95,4 +108,10 @@ if (container) {
       </BrowserRouter>
     </React.StrictMode>
   );
+}
+
+// Make sure Vite doesn't force a full page reload for this module on HMR;
+// reusing the cached root above already handles re-rendering correctly.
+if (import.meta.hot) {
+  import.meta.hot.accept();
 }
