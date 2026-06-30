@@ -36,6 +36,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 // Public routes
+Route::get('/suppliers/nearby', [SupplierController::class, 'nearby']);
 Route::get('/suppliers', [SupplierController::class, 'index']);
 Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
 Route::get('/products', [ProductController::class, 'index']);

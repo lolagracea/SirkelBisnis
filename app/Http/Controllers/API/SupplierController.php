@@ -190,6 +190,77 @@ class SupplierController extends Controller
     }
 
     /**
+     * Get nearby suppliers based on coordinates using Haversine formula.
+     * Query params: lat, lng, radius (km, default 50), per_page
+     */
+    public function nearby(Request $request): JsonResponse
+    {
+        try {
+            $lat    = (float) $request->query('lat', -6.200000);
+            $lng    = (float) $request->query('lng', 106.816666);
+            $radius = (float) $request->query('radius', 50);
+            $perPage = (int)  $request->query('per_page', 50);
+            $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+            $search = $request->query('search', '');
+
+            // Since SQLite does not support trigonometric functions by default,
+            // we fetch all suppliers and calculate the distance in PHP.
+            $query = SupplierProfile::with('user');
+            
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('supplier_name', 'like', '%' . $search . '%')
+                      ->orWhere('description', 'like', '%' . $search . '%')
+                      ->orWhere('address', 'like', '%' . $search . '%');
+                });
+            }
+
+            $suppliers = $query->get();
+
+            // Calculate distance for each supplier
+            $nearbySuppliers = $suppliers->map(function ($supplier) use ($lat, $lng) {
+                $sLat = $supplier->latitude ?? -6.200000;
+                $sLng = $supplier->longitude ?? 106.816666;
+                
+                // Haversine formula
+                $earthRadius = 6371; // km
+                $dLat = deg2rad($sLat - $lat);
+                $dLng = deg2rad($sLng - $lng);
+                
+                $a = sin($dLat/2) * sin($dLat/2) +
+                     cos(deg2rad($lat)) * cos(deg2rad($sLat)) *
+                     sin($dLng/2) * sin($dLng/2);
+                $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+                $distance = $earthRadius * $c;
+                
+                $supplier->distance_km = $distance;
+                return $supplier;
+            })->filter(function ($supplier) use ($radius) {
+                return $supplier->distance_km <= $radius;
+            })->sortBy('distance_km')->values()->take($perPage);
+
+            // Map to resource + attach distance
+            $data = $nearbySuppliers->map(function ($s) {
+                $resource = (new \App\Http\Resources\SupplierResource($s))->toArray(request());
+                $resource['distance_km'] = round((float) $s->distance_km, 2);
+                return $resource;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Nearby suppliers retrieved successfully',
+                'data'    => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve nearby suppliers: ' . $e->getMessage(),
+                'data'    => null,
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id): JsonResponse

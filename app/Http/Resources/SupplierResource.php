@@ -39,7 +39,9 @@ class SupplierResource extends JsonResource
                     'nik' => $this->user->nik,
                 ];
             }),
-            'products' => ProductResource::collection($this->whenLoaded('products')),
+            'products' => $this->whenLoaded('products', function () {
+                return ProductResource::collection($this->products);
+            }),
         ];
     }
 

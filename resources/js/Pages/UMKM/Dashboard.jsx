@@ -99,6 +99,8 @@ export default function Dashboard() {
 
   // API Data States
   const [suppliers, setSuppliers] = useState([]);
+  const [nearbySuppliers, setNearbySuppliers] = useState([]);
+  const [userLocation, setUserLocation] = useState({ lat: -6.200000, lng: 106.816666, loaded: false });
   const [aiInsight, setAiInsight] = useState({
     business_condition: 'Kondisi stabil. Terus pantau pasar.',
     saving_opportunity: 'Peluang penghematan dengan memesan patungan kelompok.',
@@ -196,9 +198,36 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch suppliers from the backend, optionally filtered by a search keyword.
-  // Always asks the server for a generous page size so newly registered
-  // suppliers (which may not be among the first 10 by id) are included.
+  // Fetch nearby suppliers from the new backend endpoint.
+  const fetchNearbySuppliers = async (lat, lng, search = '') => {
+    try {
+      const res = await axios.get('/api/suppliers/nearby', {
+        params: { lat, lng, radius: 100, search, per_page: 50 },
+        headers: { Authorization: `Bearer ${localStorage.getItem('sirkel_token')}` }
+      });
+      const list = res.data?.data || [];
+      const mapped = list.map(s => {
+        return {
+          id: s.id,
+          supplier_name: s.supplier_name,
+          description: s.description || 'Penyedia bahan baku terpercaya.',
+          address: s.address || 'Alamat tidak tersedia.',
+          rating: parseFloat(s.rating || 5.0),
+          sirkel_score: parseInt(s.sirkel_score || 90),
+          distance: `${s.distance_km} km`,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          top_product: 'Bahan Baku Unggulan',
+          badge: s.sirkel_score >= 90 ? 'Elite Supplier' : 'Trusted Supplier'
+        };
+      });
+      setNearbySuppliers(mapped);
+    } catch (err) {
+      console.error('Nearby suppliers error:', err);
+    }
+  };
+
+  // Fetch all suppliers from the backend (original logic)
   const fetchSuppliers = async (search = '') => {
     try {
       const res = await supplierService.getSuppliers({ search, per_page: 50 });
@@ -237,6 +266,24 @@ export default function Dashboard() {
           }).catch(err => console.error('AI Insight error:', err)),
           fetchSuppliers()
         ]);
+        
+        // Get user location for maps and nearby suppliers
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              setUserLocation({ lat: latitude, lng: longitude, loaded: true });
+              fetchNearbySuppliers(latitude, longitude);
+            },
+            (error) => {
+              console.warn("Geolocation error, using default Jakarta", error);
+              fetchNearbySuppliers(userLocation.lat, userLocation.lng);
+            }
+          );
+        } else {
+          fetchNearbySuppliers(userLocation.lat, userLocation.lng);
+        }
+
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
@@ -246,15 +293,15 @@ export default function Dashboard() {
     loadAllData();
   }, [fetchGroupBuyings, fetchMyOrders, fetchProducts, fetchBusinessInsight]);
 
-  // Re-fetch suppliers from the server whenever the search query changes,
-  // instead of only filtering the first page that was loaded on mount.
+  // Re-fetch suppliers from the server whenever the search query changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchSuppliers(searchQuery);
+      fetchNearbySuppliers(userLocation.lat, userLocation.lng, searchQuery);
     }, 350);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, userLocation]);
 
   // Listen for Live Bidding offers via WebSocket
   useEffect(() => {
@@ -1256,25 +1303,48 @@ export default function Dashboard() {
                   </div>
 
                   {/* MAP SECTION */}
-                  <div className="w-full h-80 bg-slate-100 rounded-3xl overflow-hidden shadow-inner border border-slate-200 relative z-0">
-                    <MapContainer center={[-6.200000, 106.816666]} zoom={11} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                  <div className="w-full h-96 bg-slate-100 rounded-3xl overflow-hidden shadow-inner border border-slate-200 relative z-0">
+                    <MapContainer key={`${userLocation.lat}-${userLocation.lng}`} center={[userLocation.lat, userLocation.lng]} zoom={12} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                       <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       />
-                      {recommendedSuppliers.map(s => {
-                        // Use supplier coordinates if available, otherwise mock nearby locations for demo
-                        const lat = s.latitude || -6.200000 + (Math.random() * 0.1 - 0.05);
-                        const lng = s.longitude || 106.816666 + (Math.random() * 0.1 - 0.05);
+                      
+                      {/* Marker Lokasi UMKM */}
+                      <Marker 
+                        position={[userLocation.lat, userLocation.lng]} 
+                        icon={L.icon({ 
+                          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', 
+                          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', 
+                          iconSize: [25, 41], 
+                          iconAnchor: [12, 41], 
+                          popupAnchor: [1, -34], 
+                          shadowSize: [41, 41] 
+                        })}
+                      >
+                        <Popup>
+                          <div className="text-center font-bold text-rose-600">
+                            📍 Lokasi Anda
+                          </div>
+                        </Popup>
+                      </Marker>
+
+                      {/* Markers for Nearby Suppliers */}
+                      {nearbySuppliers.map(s => {
+                        const lat = s.latitude ? parseFloat(s.latitude) : -6.200000;
+                        const lng = s.longitude ? parseFloat(s.longitude) : 106.816666;
                         return (
                           <Marker key={s.id} position={[lat, lng]}>
                             <Popup>
                               <div className="text-center">
                                 <strong className="block text-sm text-slate-800">{s.supplier_name}</strong>
+                                <span className="text-[10px] text-emerald-600 font-bold block bg-emerald-50 rounded-full px-2 py-0.5 mt-1 mb-1 border border-emerald-100">
+                                  Berjarak {s.distance}
+                                </span>
                                 <span className="text-xs text-amber-500 font-bold block mb-2">⭐ {s.rating} ({s.sirkel_score}/100)</span>
                                 <button 
                                   onClick={() => openSupplierModal(s)}
-                                  className="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs hover:bg-emerald-700"
+                                  className="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs hover:bg-emerald-700 transition w-full shadow-sm"
                                 >
                                   Lihat Profil
                                 </button>
