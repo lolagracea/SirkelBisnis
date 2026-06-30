@@ -473,9 +473,7 @@ export default function Register() {
             {/* ── Header ── */}
             <div className="sm:mx-auto sm:w-full sm:max-w-xl">
                 <div className="flex justify-center items-center gap-3 mb-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#16A34A] to-[#22C55E] text-white shadow-lg shadow-green-200">
-                        <Sparkles className="h-6 w-6" />
-                    </div>
+                    <img src="/logo.png" alt="SirkelBisnis" className="h-12 w-12 rounded-2xl object-cover object-top bg-white shadow-md" />
                     <span className="font-extrabold text-2xl tracking-tight text-[#0F172A]">
                         Sirkel<span className="text-[#16A34A]">Bisnis</span>
                     </span>
