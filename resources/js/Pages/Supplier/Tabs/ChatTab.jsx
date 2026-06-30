@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User as UserIcon } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../lib/api';
 
 export default function ChatTab({ setToast, user }) {
   const [chats, setChats] = useState([]);
@@ -20,9 +20,7 @@ export default function ChatTab({ setToast, user }) {
 
   const fetchChats = async () => {
     try {
-      const res = await axios.get('/api/chats', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/chats');
       setChats(res.data.data);
     } catch (err) {
       setToast({ visible: true, type: 'error', message: 'Failed to fetch chats' });
@@ -33,9 +31,7 @@ export default function ChatTab({ setToast, user }) {
 
   const fetchMessages = async (chatId) => {
     try {
-      const res = await axios.get(`/api/chats/${chatId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get(`/chats/${chatId}`);
       setSelectedChat(res.data.data);
       setMessages(res.data.data.messages);
     } catch (err) {
@@ -48,9 +44,7 @@ export default function ChatTab({ setToast, user }) {
     if (!newMessage.trim()) return;
 
     try {
-      const res = await axios.post(`/api/chats/${selectedChat.id}/message`, { message: newMessage }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.post(`/chats/${selectedChat.id}/message`, { message: newMessage });
       setMessages([...messages, res.data.data]);
       setNewMessage('');
     } catch (err) {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../lib/api';
 import { Store, Clock, Settings, Save } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 
 export default function StorefrontTab({ setToast }) {
   const { user } = useAuth();
   const supplierId = user?.profile?.id;
-  
+
   const [formData, setFormData] = useState({
     vacation_mode: false,
     open_time: '08:00',
@@ -17,7 +17,7 @@ export default function StorefrontTab({ setToast }) {
 
   useEffect(() => {
     if (supplierId) {
-      axios.get(`/api/suppliers/${supplierId}`).then(res => {
+      api.get(`/suppliers/${supplierId}`).then(res => {
         if (res.data.success) {
           const profile = res.data.data;
           setFormData({
@@ -35,7 +35,7 @@ export default function StorefrontTab({ setToast }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await axios.put(`/api/suppliers/${supplierId}`, formData);
+      const res = await api.put(`/suppliers/${supplierId}`, formData);
       if (res.data.success) {
         setToast({ visible: true, type: 'success', message: 'Pengaturan toko berhasil disimpan' });
       }

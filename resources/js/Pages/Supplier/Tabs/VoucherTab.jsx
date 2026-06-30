@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Plus, Edit3, Trash2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../lib/api';
 
 export default function VoucherTab({ setToast }) {
   const [vouchers, setVouchers] = useState([]);
@@ -17,9 +17,7 @@ export default function VoucherTab({ setToast }) {
 
   const fetchVouchers = async () => {
     try {
-      const res = await axios.get('/api/vouchers', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/vouchers');
       setVouchers(res.data.data);
     } catch (err) {
       setToast({ visible: true, type: 'error', message: 'Failed to fetch vouchers' });
@@ -32,20 +30,17 @@ export default function VoucherTab({ setToast }) {
     e.preventDefault();
     try {
       if (editingVoucher) {
-        await axios.put(`/api/vouchers/${editingVoucher.id}`, formData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        await api.put(`/vouchers/${editingVoucher.id}`, formData);
         setToast({ visible: true, type: 'success', message: 'Voucher updated' });
       } else {
-        await axios.post('/api/vouchers', formData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        await api.post('/vouchers', formData);
         setToast({ visible: true, type: 'success', message: 'Voucher created' });
       }
       setIsModalOpen(false);
       fetchVouchers();
     } catch (err) {
-      setToast({ visible: true, type: 'error', message: 'Failed to save voucher' });
+      const errorMsg = err.response?.data?.message || 'Failed to save voucher';
+      setToast({ visible: true, type: 'error', message: errorMsg });
     }
   };
 
@@ -72,9 +67,7 @@ export default function VoucherTab({ setToast }) {
   const deleteVoucher = async (id) => {
     if (!confirm('Hapus voucher?')) return;
     try {
-      await axios.delete(`/api/vouchers/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.delete(`/vouchers/${id}`);
       setToast({ visible: true, type: 'success', message: 'Voucher deleted' });
       fetchVouchers();
     } catch (err) {

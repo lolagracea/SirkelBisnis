@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../lib/api';
 
 export default function DisputeTab({ setToast }) {
   const [disputes, setDisputes] = useState([]);
@@ -12,9 +12,7 @@ export default function DisputeTab({ setToast }) {
 
   const fetchDisputes = async () => {
     try {
-      const res = await axios.get('/api/disputes', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/disputes');
       setDisputes(res.data.data);
     } catch (err) {
       setToast({ visible: true, type: 'error', message: 'Failed to fetch disputes' });
@@ -25,9 +23,7 @@ export default function DisputeTab({ setToast }) {
 
   const respondDispute = async (id, response, status) => {
     try {
-      await axios.patch(`/api/disputes/${id}/respond`, { response, status }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.patch(`/disputes/${id}/respond`, { response, status });
       setToast({ visible: true, type: 'success', message: 'Tanggapan terkirim' });
       fetchDisputes();
     } catch (err) {

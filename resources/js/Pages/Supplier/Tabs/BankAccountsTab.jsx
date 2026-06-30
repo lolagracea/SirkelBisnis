@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../lib/api';
 import { Landmark, Plus, Trash2, Edit3, CheckCircle } from 'lucide-react';
 
 export default function BankAccountsTab({ setToast }) {
@@ -16,7 +16,7 @@ export default function BankAccountsTab({ setToast }) {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/supplier-bank-accounts');
+      const res = await api.get('/supplier-bank-accounts');
       if (res.data.success) {
         setAccounts(res.data.data);
       }
@@ -33,11 +33,11 @@ export default function BankAccountsTab({ setToast }) {
     try {
       let res;
       if (formData.id) {
-        res = await axios.put(`/api/supplier-bank-accounts/${formData.id}`, formData);
+        res = await api.put(`/supplier-bank-accounts/${formData.id}`, formData);
       } else {
-        res = await axios.post('/api/supplier-bank-accounts', formData);
+        res = await api.post('/supplier-bank-accounts', formData);
       }
-      
+
       if (res.data.success) {
         setToast({ visible: true, type: 'success', message: 'Rekening bank berhasil disimpan' });
         setIsModalOpen(false);
@@ -53,7 +53,7 @@ export default function BankAccountsTab({ setToast }) {
   const handleDelete = async (id) => {
     if (!confirm('Hapus rekening ini?')) return;
     try {
-      const res = await axios.delete(`/api/supplier-bank-accounts/${id}`);
+      const res = await api.delete(`/supplier-bank-accounts/${id}`);
       if (res.data.success) {
         setToast({ visible: true, type: 'success', message: 'Rekening dihapus' });
         fetchAccounts();

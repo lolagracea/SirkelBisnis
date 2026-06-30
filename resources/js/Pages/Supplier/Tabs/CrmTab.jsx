@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../lib/api';
 import { Users, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function CrmTab({ setToast }) {
@@ -16,7 +16,7 @@ export default function CrmTab({ setToast }) {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/supplier-crm/customers');
+      const res = await api.get('/supplier-crm/customers');
       if (res.data.success) {
         setCustomers(res.data.data);
       }
@@ -55,7 +55,7 @@ export default function CrmTab({ setToast }) {
 
     try {
       setBroadcasting(true);
-      const res = await axios.post('/api/supplier-crm/broadcast', {
+      const res = await api.post('/supplier-crm/broadcast', {
         message,
         customer_ids: selectedCustomers
       });

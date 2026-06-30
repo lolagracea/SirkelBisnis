@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../lib/api';
 
 export default function InvoicesTab({ setToast }) {
   const [invoices, setInvoices] = useState([]);
@@ -12,9 +12,7 @@ export default function InvoicesTab({ setToast }) {
 
   const fetchInvoices = async () => {
     try {
-      const res = await axios.get('/api/invoices', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/invoices');
       setInvoices(res.data.data);
     } catch (err) {
       setToast({ visible: true, type: 'error', message: 'Failed to fetch invoices' });
@@ -25,9 +23,7 @@ export default function InvoicesTab({ setToast }) {
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.patch(`/api/invoices/${id}/status`, { status }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.patch(`/invoices/${id}/status`, { status });
       setToast({ visible: true, type: 'success', message: `Invoice marked as ${status}` });
       fetchInvoices();
     } catch (err) {
@@ -41,9 +37,7 @@ export default function InvoicesTab({ setToast }) {
 
   const downloadTaxReport = async () => {
     try {
-      const res = await axios.get('/api/analytics/tax-report', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/analytics/tax-report');
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res.data, null, 2));
       const downloadAnchorNode = document.createElement('a');
       downloadAnchorNode.setAttribute("href", dataStr);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../lib/api';
 import { 
   Building, CreditCard, FileText, Repeat, Link, Megaphone, Loader2 
 } from 'lucide-react';
@@ -12,9 +12,9 @@ export default function AdvancedB2bTab() {
   const fetchTabContent = async (endpoint) => {
     setLoading(true);
     try {
-      const res = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      // Remove '/api' prefix since base URL is already '.../api'
+      const cleanEndpoint = endpoint.replace(/^\/api/, '');
+      const res = await api.get(cleanEndpoint);
       setData(res.data);
     } catch (err) {
       console.error(err);
