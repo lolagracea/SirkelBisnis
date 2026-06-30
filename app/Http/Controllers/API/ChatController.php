@@ -6,22 +6,41 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Chat;
+use App\Models\ChatMessage;
 use App\Models\UmkmProfile;
 use App\Models\SupplierProfile;
+use App\Events\ChatMessageSent;
 
 class ChatController extends Controller
 {
     public function index(): JsonResponse
     {
         $user = auth()->user();
+
         if ($user->isRole('umkm')) {
-            $chats = Chat::with(['supplier.user', 'messages' => function($q) {
+            // Yang dihitung "belum dibaca" buat UMKM adalah pesan yang dikirim Supplier
+            $otherType = SupplierProfile::class;
+
+            $chats = Chat::with(['supplier.user', 'messages' => function ($q) {
                 $q->latest()->limit(1);
-            }])->where('umkm_id', $user->umkmProfile->id)->get();
+            }])
+                ->withCount(['messages as unread_count' => function ($q) use ($otherType) {
+                    $q->where('sender_type', $otherType)->where('is_read', false);
+                }])
+                ->where('umkm_id', $user->umkmProfile->id)
+                ->get();
         } else if ($user->isRole('supplier')) {
-            $chats = Chat::with(['umkm.user', 'messages' => function($q) {
+            // Yang dihitung "belum dibaca" buat Supplier adalah pesan yang dikirim UMKM
+            $otherType = UmkmProfile::class;
+
+            $chats = Chat::with(['umkm.user', 'messages' => function ($q) {
                 $q->latest()->limit(1);
-            }])->where('supplier_id', $user->supplierProfile->id)->get();
+            }])
+                ->withCount(['messages as unread_count' => function ($q) use ($otherType) {
+                    $q->where('sender_type', $otherType)->where('is_read', false);
+                }])
+                ->where('supplier_id', $user->supplierProfile->id)
+                ->get();
         } else {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
@@ -34,9 +53,28 @@ class ChatController extends Controller
 
     public function show($id): JsonResponse
     {
-        $chat = Chat::with(['messages' => function($q) {
+        $user = auth()->user();
+
+        $chat = Chat::with(['messages' => function ($q) {
             $q->orderBy('created_at', 'asc');
         }, 'umkm.user', 'supplier.user'])->findOrFail($id);
+
+        // Tentukan tipe pengirim "lawan bicara" dari sisi user yang sedang membuka chat ini,
+        // lalu tandai semua pesan dari lawan bicara sebagai sudah dibaca.
+        if ($user->isRole('umkm')) {
+            $otherType = SupplierProfile::class;
+        } else if ($user->isRole('supplier')) {
+            $otherType = UmkmProfile::class;
+        } else {
+            $otherType = null;
+        }
+
+        if ($otherType) {
+            ChatMessage::where('chat_id', $chat->id)
+                ->where('sender_type', $otherType)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        }
 
         return response()->json([
             'success' => true,
@@ -91,6 +129,8 @@ class ChatController extends Controller
             'sender_id' => $senderId,
             'message' => $request->message
         ]);
+
+        broadcast(new ChatMessageSent($message))->toOthers();
 
         return response()->json([
             'success' => true,

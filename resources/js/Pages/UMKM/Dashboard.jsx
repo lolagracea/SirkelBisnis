@@ -10,6 +10,8 @@ import supplierService from '../../services/supplierService';
 import productService from '../../services/productService';
 import useConfirmPopup from '../../hooks/useConfirmPopup';
 import ConfirmModal from '../../components/ConfirmModal';
+import ChatTab from './Tabs/ChatTab';
+import axios from 'axios';
 import { 
   Users, 
   ShoppingCart, 
@@ -40,7 +42,8 @@ import {
   ChevronDown,
   Layers,
   Menu,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -121,6 +124,7 @@ export default function Dashboard() {
   const [patunganDeadlineDays, setPatunganDeadlineDays] = useState(3);
   
   const [actionProcessing, setActionProcessing] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState(null);
 
   // Fetch all products belonging to a specific supplier directly from the
   // server, so newly added products always show up regardless of where
@@ -143,6 +147,22 @@ export default function Dashboard() {
     setSelectedSupplier(s);
     setIsSupplierModalOpen(true);
     fetchSupplierProducts(s.id);
+  };
+
+  const handleStartChat = async (supplierId) => {
+    try {
+      const res = await axios.post('/api/chats/start', { supplier_id: supplierId }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('sirkel_token')}` }
+      });
+      setSelectedChatId(res.data.data.id);
+      setIsSupplierModalOpen(false);
+      setActiveTab('chat');
+    } catch (err) {
+      console.error('Failed to start chat', err);
+      setSuccessToastMessage('Gagal memulai chat');
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 3000);
+    }
   };
 
   // Fetch suppliers from the backend, optionally filtered by a search keyword.
@@ -490,6 +510,14 @@ export default function Dashboard() {
           >
             <Star className="h-4.5 w-4.5" />
             Cari Supplier
+          </button>
+
+          <button
+            onClick={() => { handleTabChange('chat'); setIsSidebarOpen(false); }}
+            className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${activeTab === 'chat' ? 'bg-emerald-50 text-emerald-700' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]'}`}
+          >
+            <MessageSquare className="h-4.5 w-4.5" />
+            Pesan
           </button>
 
           <button
@@ -1332,6 +1360,14 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'chat' && (
+                <ChatTab 
+                  setToast={(t) => { setSuccessToastMessage(t.message); setIsSuccessToastVisible(true); setTimeout(() => setIsSuccessToastVisible(false), 3000); }} 
+                  user={user} 
+                  defaultSelectedChatId={selectedChatId} 
+                />
+              )}
             </>
           )}
 
@@ -1625,6 +1661,14 @@ export default function Dashboard() {
                 className="rounded-xl border border-[#E2E8F0] bg-white px-6 py-2.5 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition"
               >
                 Tutup
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleStartChat(selectedSupplier.id)}
+                className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition flex items-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Mulai Chat
               </button>
             </div>
           </div>
