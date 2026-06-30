@@ -28,9 +28,6 @@ export default function ChatTab({ setToast, user }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Subscribe ke SEMUA channel chat milik user begitu daftar obrolan termuat,
-  // supaya pesan baru tetap masuk real-time walau chat itu belum sedang dibuka
-  // (jadi sidebar & badge unread ikut update tanpa perlu refresh).
   useEffect(() => {
     if (chats.length === 0) return;
 

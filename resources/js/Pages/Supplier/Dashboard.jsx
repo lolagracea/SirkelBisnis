@@ -1257,7 +1257,13 @@ export default function Dashboard({ flash = {} } = {}) {
                 {/* Group Buying Overview Preview (1/3 width) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4 flex flex-col">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold tracking-tight text-slate-900">Peluang Patungan</h3>
+                    <h3 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                      Live Bidding Patungan
+                    </h3>
                     <button onClick={() => setActiveTab('group-buying')} className="text-emerald-600 hover:text-emerald-700 font-bold text-xs flex items-center gap-0.5">
                       <span>Lihat Semua</span>
                       <ArrowUpRight size={14} />
@@ -1690,7 +1696,13 @@ export default function Dashboard({ flash = {} } = {}) {
           {activeTab === 'group-buying' && (
             <div className="space-y-6 animate-fadeIn">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Sirkel Patungan (Group Buying) UMKM</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                  <span className="relative flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+                  </span>
+                  Pasar Lelang (Live Bidding) Patungan UMKM
+                </h1>
                 <p className="text-slate-500 text-sm">Lihat kumpulan permintaan patungan bahan baku dari aliansi UMKM. Tawarkan harga terbaik Anda untuk memenangkan pasokan!</p>
               </div>
 
