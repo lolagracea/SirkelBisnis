@@ -11,6 +11,7 @@ import useAIInsight from '../../hooks/useAIInsight.js';
 import useWallet from '../../hooks/useWallet.js';
 import useAnalytics from '../../hooks/useAnalytics.js';
 import useStockLedger from '../../hooks/useStockLedger.js';
+import useReverb from '../../hooks/useReverb';
 import sirkelScoreService from '../../services/sirkelScoreService';
 import supplierOfferService from '../../services/supplierOfferService';
 import supplierService from '../../services/supplierService';
@@ -82,6 +83,7 @@ export default function Dashboard({ flash = {} } = {}) {
   const { wallet, loading: walletLoading, fetchWallet, withdraw } = useWallet();
   const { analytics, loading: analyticsLoading, fetchAnalytics } = useAnalytics();
   const { ledgers, loading: ledgerLoading, fetchLedgers } = useStockLedger();
+  const { listenToChannel, echoInstance } = useReverb();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -256,6 +258,29 @@ export default function Dashboard({ flash = {} } = {}) {
       return () => clearTimeout(timer);
     }
   }, [flash?.error]);
+  
+  // Listen for real-time payment notifications
+  useEffect(() => {
+    if (user?.id) {
+      const channelName = `supplier.${user.id}`;
+      const channel = listenToChannel(channelName, '.payment.paid', (e) => {
+        console.log('Payment notification received in Supplier:', e);
+        // 1. Tampilkan Notifikasi
+        setToast({
+          visible: true,
+          type: 'success',
+          message: `Pembayaran berhasil diterima sebesar Rp ${e.transaction?.amount?.toLocaleString('id-ID')}`
+        });
+        // 2. Refresh Pesanan & Wallet
+        fetchSupplierOrders();
+        fetchWallet();
+      });
+
+      return () => {
+        if (echoInstance) echoInstance.leave(`private-${channelName}`);
+      };
+    }
+  }, [user, listenToChannel, echoInstance, fetchSupplierOrders, fetchWallet]);
 
   const currentSupplier = supplier || {
     supplier_name: user?.name || 'Supplier PJ',

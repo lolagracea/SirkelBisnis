@@ -180,8 +180,11 @@ class XenditWebhookController extends Controller
                 // 5b. Update status Invoice menjadi 'paid'
                 $invoice->update(['status' => 'paid']);
 
-                // 5c. Update Order payment_status
-                $order->update(['payment_status' => 'paid']);
+                // 5c. Update Order payment_status dan status
+                $order->update([
+                    'payment_status' => 'paid',
+                    'status' => $order->status === 'pending' ? 'paid' : $order->status
+                ]);
 
                 // 5d. Jika metode pembayaran TEMPO: update CreditLimit.used_amount
                 if ($invoice->payment_method === 'tempo' && $invoice->payment_term_days > 0) {
