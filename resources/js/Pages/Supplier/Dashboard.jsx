@@ -655,7 +655,7 @@ export default function Dashboard({ flash = {} } = {}) {
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans antialiased text-[#1E293B]">
       {/* Sidebar for desktop and mobile */}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out`}>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 mb-8 h-10 shrink-0">
             <div className="flex items-center gap-3">
