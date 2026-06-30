@@ -52,7 +52,9 @@ import {
   FileSpreadsheet,
   Tag,
   ShieldAlert,
-  Upload
+  Upload,
+  Store,
+  Landmark
 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import InvoicesTab from './Tabs/InvoicesTab';
