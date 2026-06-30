@@ -155,10 +155,19 @@ class OrderService
      */
     public function updateStatus(User $user, Order $order, string $newStatus, array $extraData = []): Order
     {
-        // Business Rule: Only the order's supplier can update status
+        // Business Rule: Only the order's supplier can update status, except for completing which can be done by both buyer and supplier.
         $supplierProfile = $order->supplier;
-        if (!$supplierProfile || $supplierProfile->user_id !== $user->id) {
-            throw new AuthorizationException('Hanya supplier penerima pesanan yang dapat memperbarui status pesanan ini.');
+        $isSupplier = $supplierProfile && $supplierProfile->user_id === $user->id;
+        $isBuyer = $order->buyer_id === $user->id;
+
+        if ($newStatus === 'completed') {
+            if (!$isSupplier && !$isBuyer) {
+                throw new AuthorizationException('Hanya supplier penerima pesanan atau pembeli (UMKM) yang dapat menyelesaikan pesanan ini.');
+            }
+        } else {
+            if (!$isSupplier) {
+                throw new AuthorizationException('Hanya supplier penerima pesanan yang dapat memperbarui status pesanan ini.');
+            }
         }
 
         $currentStatus = $order->status;
@@ -230,6 +239,16 @@ class OrderService
                     'status' => 'completed',
                     'description' => "Pendapatan dari pesanan {$order->order_code}",
                 ]);
+
+                // Notify Supplier that order is completed / received by buyer
+                if ($supplierProfile->user_id) {
+                    \App\Models\Notification::create([
+                        'user_id' => $supplierProfile->user_id,
+                        'title' => 'Pesanan Selesai & Diterima',
+                        'message' => "Pesanan {$order->order_code} telah diterima oleh pembeli. Dana sebesar Rp " . number_format($order->total_price, 0, ',', '.') . " telah diteruskan ke saldo Anda.",
+                        'type' => 'order',
+                    ]);
+                }
             }
         }
 

@@ -41,8 +41,8 @@ class ReviewSummarizerService
             throw new \Exception('Gemini API key is not configured.');
         }
 
-        // Exact prompt request from prompt instructions, updated to explicitly avoid emojis/emoticons
-        $prompt = "Analyze the supplier reviews below.\n\nReturn JSON only.\n\nGenerate:\n\n1. Positive Highlights\n2. Negative Highlights\n3. Overall Summary\n\nNote: Do not include any emojis, emoticons, or icon symbols in the response highlights or summary text. Keep the tone professional, clean, and business-focused.\n\nReviews:\n" . $reviewsJson;
+        // Exact prompt request from prompt instructions, updated to explicitly avoid emojis/emoticons and generate in Indonesian
+        $prompt = "Analisis ulasan supplier di bawah ini.\n\nKembalikan format JSON saja.\n\nHasilkan:\n\n1. positive (poin-poin keunggulan/positif)\n2. negative (poin-poin kekurangan/negatif)\n3. summary (ringkasan ulasan secara keseluruhan)\n\nCatatan: Jangan sertakan emoji, emotikon, atau simbol ikon apa pun dalam teks ringkasan atau poin-poin keunggulan/kekurangan. Jaga nada bicara tetap profesional, bersih, dan berfokus pada bisnis. Seluruh teks analisis wajib ditulis dalam bahasa Indonesia.\n\nUlasan:\n" . $reviewsJson;
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 

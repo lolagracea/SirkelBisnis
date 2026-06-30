@@ -1,30 +1,16 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api/supplier-staff',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+import api from '../lib/api';
 
 const supplierStaffService = {
   getStaff: async () => {
-    const response = await api.get('/');
+    const response = await api.get('/supplier-staff');
     return response.data;
   },
   addStaff: async (data) => {
-    const response = await api.post('/', data);
+    const response = await api.post('/supplier-staff', data);
     return response.data;
   },
   removeStaff: async (id) => {
-    const response = await api.delete(`/${id}`);
+    const response = await api.delete(`/supplier-staff/${id}`);
     return response.data;
   }
 };

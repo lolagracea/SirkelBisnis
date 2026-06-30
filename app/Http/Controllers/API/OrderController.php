@@ -153,12 +153,18 @@ class OrderController extends Controller
         try {
             $order = Order::findOrFail($id);
 
-            // Cek relasi object — ini memang tidak bisa digantikan Spatie
-            // karena butuh tahu apakah supplier ini punya relasi ke order ini
+            // Cek relasi object
             $isSupplierOfOrder = $order->supplier && $order->supplier->user_id === $request->user()->id;
+            $isBuyerOfOrder = $order->buyer_id === $request->user()->id;
 
-            if (!$isSupplierOfOrder) {
-                throw new AuthorizationException('Hanya supplier penerima pesanan yang dapat memperbarui status.');
+            if ($request->status === 'completed') {
+                if (!$isSupplierOfOrder && !$isBuyerOfOrder) {
+                    throw new AuthorizationException('Hanya supplier penerima pesanan atau pembeli (UMKM) yang dapat menyelesaikan pesanan ini.');
+                }
+            } else {
+                if (!$isSupplierOfOrder) {
+                    throw new AuthorizationException('Hanya supplier penerima pesanan yang dapat memperbarui status.');
+                }
             }
 
             $extraData = $request->only(['shipping_courier', 'tracking_number']);

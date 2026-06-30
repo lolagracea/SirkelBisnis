@@ -60,7 +60,7 @@ export default function Dashboard() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   
   const { groupBuyings, loading: gbLoading, fetchGroupBuyings, joinGroupBuying, startGroupBuying } = useGroupBuyings();
-  const { orders, loading: ordersLoading, fetchMyOrders, payOrder, placeOrder } = useOrders();
+  const { orders, loading: ordersLoading, fetchMyOrders, payOrder, placeOrder, changeStatus } = useOrders();
   const { loading: aiLoading, fetchBusinessInsight } = useAIInsight();
   const { products, loading: prodLoading, fetchProducts } = useProducts();
   const {
@@ -68,6 +68,7 @@ export default function Dashboard() {
     confirmGroupBuying,
     confirmB2BPurchase,
     confirmCancelOrder,
+    confirmOrderReceipt,
   } = useConfirmPopup();
   
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -198,6 +199,27 @@ export default function Dashboard() {
     }
   };
 
+  const handleCompleteOrder = async (orderId) => {
+    const orderItem = recentOrders.find(o => o.rawId === orderId);
+    const orderCode = orderItem ? orderItem.id : `#${orderId}`;
+
+    const confirmed = await confirmOrderReceipt(orderCode);
+    if (!confirmed) return;
+    setIsLoading(true);
+    try {
+      await changeStatus(orderId, 'completed');
+      setSuccessToastMessage("Pesanan berhasil diselesaikan!");
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 4000);
+      fetchMyOrders();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Gagal menyelesaikan pesanan.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleBeliLangsung = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
@@ -305,6 +327,7 @@ export default function Dashboard() {
     const formattedDate = `${d.getDate()} ${d.toLocaleString('id-ID', { month: 'short' })} ${d.getFullYear()}`;
     return {
       id: `ORD-${String(o.id).padStart(5, '0')}`,
+      rawId: o.id,
       product: o.product?.name || 'Bahan Baku',
       supplier: o.supplier?.supplier_name || 'Supplier Mitra',
       quantity: o.quantity,
@@ -1075,6 +1098,7 @@ export default function Dashboard() {
                           <th className="pb-4">Total</th>
                           <th className="pb-4">Status</th>
                           <th className="pb-4">Tanggal Pemesanan</th>
+                          <th className="pb-4 text-right">Aksi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#F8FAFC]">
@@ -1097,6 +1121,17 @@ export default function Dashboard() {
                               </span>
                             </td>
                             <td className="py-4 text-[#94A3B8]">{o.date}</td>
+                            <td className="py-4 text-right">
+                              {o.status === 'Shipped' && (
+                                <button
+                                  onClick={() => handleCompleteOrder(o.rawId)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
+                                >
+                                  Terima Barang
+                                </button>
+                              )}
+                              {o.status !== 'Shipped' && <span className="text-[#94A3B8]">-</span>}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

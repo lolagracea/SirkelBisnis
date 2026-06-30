@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::patch('/orders/{id}/payment', [OrderController::class, 'updatePayment']);
+    Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 
     Route::middleware('role:umkm')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
@@ -76,7 +77,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:supplier')->group(function () {
         Route::get('/supplier-orders', [OrderController::class, 'supplierOrders']);
-        Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
         // Supplier Offer (Tawarkan Harga pada Group Buying)
         Route::post('/group-buyings/{id}/offer', [SupplierOfferController::class, 'store']);
         Route::get('/my-offers', [SupplierOfferController::class, 'myOffers']);

@@ -1,38 +1,24 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api/procurement',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+import api from '../lib/api';
 
 const procurementService = {
   getManufacturers: async () => {
-    const response = await api.get('/manufacturers');
+    const response = await api.get('/procurement/manufacturers');
     return response.data;
   },
   addManufacturer: async (data) => {
-    const response = await api.post('/manufacturers', data);
+    const response = await api.post('/procurement/manufacturers', data);
     return response.data;
   },
   getPurchaseOrders: async () => {
-    const response = await api.get('/purchase-orders');
+    const response = await api.get('/procurement/purchase-orders');
     return response.data;
   },
   createPurchaseOrder: async (data) => {
-    const response = await api.post('/purchase-orders', data);
+    const response = await api.post('/procurement/purchase-orders', data);
     return response.data;
   },
   receivePurchaseOrder: async (id) => {
-    const response = await api.post(`/purchase-orders/${id}/receive`);
+    const response = await api.post(`/procurement/purchase-orders/${id}/receive`);
     return response.data;
   }
 };

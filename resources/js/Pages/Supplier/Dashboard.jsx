@@ -2610,7 +2610,7 @@ export default function Dashboard({ flash = {} } = {}) {
                     setToast({ visible: true, type: 'error', message: 'Kurir dan Resi harus diisi.' });
                     return;
                   }
-                  await changeStatus(orderToShip.id, 'Shipped', {
+                  await changeStatus(orderToShip.rawId, 'shipped', {
                     shipping_courier: shippingForm.courier,
                     tracking_number: shippingForm.tracking
                   });

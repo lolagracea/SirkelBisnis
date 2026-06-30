@@ -229,6 +229,18 @@ export default function useConfirmPopup() {
       highlightCancel: false,
     });
 
+  /** Popup: Selesaikan Pesanan / Konfirmasi Barang Diterima */
+  const confirmOrderReceipt = (orderCode) =>
+    openModal({
+      type: 'confirm',
+      title: 'Konfirmasi Barang Diterima?',
+      message: `Apakah Anda yakin ingin menyelesaikan pesanan <strong>${orderCode}</strong>? Aksi ini akan menyelesaikan transaksi dan langsung meneruskan dana pembayaran ke saldo dompet supplier.`,
+      confirmText: 'Ya, Selesai',
+      cancelText: 'Batal',
+      confirmColor: 'green',
+      highlightCancel: false,
+    });
+
   return {
     modalProps,
     // Keuangan
@@ -249,5 +261,6 @@ export default function useConfirmPopup() {
     // Logistik
     confirmCancelOrder,
     confirmDispatch,
+    confirmOrderReceipt,
   };
 }

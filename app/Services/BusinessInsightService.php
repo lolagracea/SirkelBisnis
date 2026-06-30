@@ -95,8 +95,8 @@ class BusinessInsightService
             throw new \Exception('Gemini API key is not configured.');
         }
 
-        // Exact prompt from instructions, updated to explicitly avoid emojis/emoticons
-        $prompt = "Analyze this UMKM business data.\n\nProvide:\n\n1. Current Business Condition\n2. Cost Saving Opportunities\n3. Group Buying Recommendation\n4. Restock Recommendation\n5. Business Advice\n\nNote: Do not include any emojis, emoticons, or icon symbols in the response text. Keep the tone professional, clean, and business-focused.\n\nReturn JSON only.\n\nUMKM Business Data:\n" . json_encode($businessData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Exact prompt from instructions, updated to explicitly avoid emojis/emoticons and generate in Indonesian
+        $prompt = "Analisis data bisnis UMKM ini.\n\nBerikan analisis dalam bahasa Indonesia dengan poin-poin berikut:\n\n1. Current Business Condition (kondisi bisnis saat ini)\n2. Cost Saving Opportunities (peluang penghematan biaya)\n3. Group Buying Recommendation (rekomendasi patungan kelompok)\n4. Restock Recommendation (rekomendasi restok)\n5. Business Advice (saran/rekomendasi operasional utama)\n\nCatatan: Jangan sertakan emoji, emotikon, atau simbol ikon apa pun dalam teks respons. Jaga nada bicara tetap profesional, bersih, dan berfokus pada bisnis. Seluruh teks analisis wajib ditulis dalam bahasa Indonesia.\n\nKembalikan format JSON saja dengan kunci (keys): 'business_condition', 'saving_opportunity', 'group_buying_recommendation', 'restock_recommendation', 'business_advice'.\n\nData Bisnis UMKM:\n" . json_encode($businessData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
