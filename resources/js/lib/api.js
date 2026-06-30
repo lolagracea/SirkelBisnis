@@ -51,7 +51,9 @@ api.interceptors.response.use(
       }
     } else {
       // Network Error
-      console.error('Kesalahan Jaringan: Tidak dapat terhubung ke server.');
+      if (navigator.onLine) {
+        console.error('Kesalahan Jaringan: Tidak dapat terhubung ke server.');
+      }
     }
 
     return Promise.reject(error);

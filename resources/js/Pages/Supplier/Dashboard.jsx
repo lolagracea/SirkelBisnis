@@ -654,14 +654,12 @@ export default function Dashboard({ flash = {} } = {}) {
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans antialiased text-[#1E293B]">
       {/* Sidebar for desktop and mobile */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out overflow-hidden`}>
-        <div className="flex flex-1 flex-col min-h-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out`}>
+        <div className="flex-1 flex flex-col">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 mb-8 h-10 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                <Layers className="h-5 w-5" />
-              </div>
+              <img src="/logo.png" alt="SirkelBisnis" className="h-10 w-10 rounded-xl object-cover object-top bg-white shadow-xs" />
               <div>
                 <span className="font-bold text-lg tracking-tight text-[#0F172A]">Sirkel<span className="text-emerald-600">Bisnis</span></span>
                 <p className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold">Supplier Portal</p>
@@ -842,6 +840,7 @@ export default function Dashboard({ flash = {} } = {}) {
           </nav>
         </div>
 
+
         {/* User Footer Profile */}
         <div className="border-t border-[#E2E8F0] pt-4 mt-auto shrink-0">
           <div className="flex items-center gap-3 px-2 py-1 mb-3">
@@ -983,7 +982,7 @@ export default function Dashboard({ flash = {} } = {}) {
         </header>
 
         {/* Dashboard Content Container */}
-        <main className="p-6 md:p-8 space-y-6 max-w-7xl w-full mx-auto flex-1">
+        <main className="p-6 md:p-8 space-y-6 w-full flex-1">
           {/* Global Toast Feedback Banner */}
           {toast.visible && (
             <div className={`border-l-4 p-4 rounded-r-lg shadow-sm flex items-center justify-between animate-fadeIn mb-6 ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-600' : 'bg-rose-50 border-rose-600'}`}>

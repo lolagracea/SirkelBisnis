@@ -24,7 +24,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user || !navigator.onLine) return;
     try {
       const response = await api.get('/notifications');
       if (response.data.success) {
