@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "concurrently \"vite\" \"php artisan reverb:start\""
     },
     "devDependencies": {
         "@inertiajs/react": "^3.4.0",

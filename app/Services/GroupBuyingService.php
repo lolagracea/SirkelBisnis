@@ -63,12 +63,6 @@ class GroupBuyingService
             ]);
         }
 
-        // Business Rule: Creator cannot join their own group buying as a member
-        if ($user->id === $groupBuying->creator_id) {
-            throw ValidationException::withMessages([
-                'user' => ['Pembuat program patungan tidak dapat bergabung sebagai peserta di program patungannya sendiri.'],
-            ]);
-        }
 
         // Business Rule: Cannot join if status is not open
         if ($groupBuying->status !== 'open') {

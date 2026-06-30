@@ -11,8 +11,20 @@ import productService from '../../services/productService';
 import useConfirmPopup from '../../hooks/useConfirmPopup';
 import ConfirmModal from '../../components/ConfirmModal';
 import ChatTab from './Tabs/ChatTab';
+import echo from '../../echo';
 import axios from 'axios';
 import CheckoutModal from '../../components/Payment/CheckoutModal';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icons in Leaflet with Webpack/Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 import { 
   Users, 
   ShoppingCart, 
@@ -102,6 +114,8 @@ export default function Dashboard() {
   const [joinQuantity, setJoinQuantity] = useState(10);
   const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
   const [successToastMessage, setSuccessToastMessage] = useState('');
+  const [isErrorToastVisible, setIsErrorToastVisible] = useState(false);
+  const [errorToastMessage, setErrorToastMessage] = useState('');
 
   // States for Beli Langsung & Buat Patungan Modals
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -117,9 +131,26 @@ export default function Dashboard() {
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [supplierProductsLoading, setSupplierProductsLoading] = useState(false);
   
+  // Review Modal States
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewedOrders, setReviewedOrders] = useState([]); // to hide button after review
+
+  // Dispute Modal States
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
+  const [selectedOrderForDispute, setSelectedOrderForDispute] = useState(null);
+  const [disputeReason, setDisputeReason] = useState('Barang Rusak');
+  const [disputeDescription, setDisputeDescription] = useState('');
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputedOrders, setDisputedOrders] = useState([]); // to track submitted disputes
+  
   // Form States
   const [beliQty, setBeliQty] = useState(50);
   const [beliNotes, setBeliNotes] = useState('');
+  const [beliVoucherCode, setBeliVoucherCode] = useState('');
   const [patunganTarget, setPatunganTarget] = useState(500);
   const [patunganMin, setPatunganMin] = useState(5);
   const [patunganDeadlineDays, setPatunganDeadlineDays] = useState(3);
@@ -230,6 +261,28 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
+  // Listen for Live Bidding offers via WebSocket
+  useEffect(() => {
+    if (!groupBuyings || groupBuyings.length === 0) return;
+
+    const openGroupBuyings = groupBuyings.filter(c => c.status === 'open');
+    openGroupBuyings.forEach(gb => {
+      echo.channel(`group-buying.${gb.id}`)
+        .listen('SupplierOfferSubmitted', (e) => {
+          setSuccessToastMessage(`🔥 Lelang Baru! ${e.supplier_name} menawarkan harga Rp ${e.price_per_unit.toLocaleString('id-ID')} pada Patungan Anda!`);
+          setIsSuccessToastVisible(true);
+          setTimeout(() => setIsSuccessToastVisible(false), 6000);
+          fetchGroupBuyings(); // refresh data
+        });
+    });
+
+    return () => {
+      openGroupBuyings.forEach(gb => {
+        echo.leave(`group-buying.${gb.id}`);
+      });
+    };
+  }, [groupBuyings]);
+
   // Tab change with premium fake loader effect
   const handleTabChange = (tabName) => {
     setIsLoading(true);
@@ -272,6 +325,10 @@ export default function Dashboard() {
       fetchMyOrders();
     } catch (err) {
       console.error(err);
+      const msg = err.response?.data?.errors?.user?.[0] || err.response?.data?.message || 'Gagal bergabung ke patungan.';
+      setErrorToastMessage(msg);
+      setIsErrorToastVisible(true);
+      setTimeout(() => setIsErrorToastVisible(false), 4000);
     }
   };
 
@@ -296,6 +353,71 @@ export default function Dashboard() {
     }
   };
 
+  const openReviewModal = (order) => {
+    setSelectedOrderForReview(order);
+    setReviewRating(5);
+    setReviewComment('');
+    setIsReviewModalOpen(true);
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    if (reviewComment.length < 10) {
+      alert('Ulasan minimal 10 karakter.');
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      await axios.post('/api/reviews', {
+        order_id: selectedOrderForReview.rawId,
+        rating: reviewRating,
+        comment: reviewComment
+      });
+      setSuccessToastMessage("Ulasan berhasil dikirim. Terima kasih!");
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 4000);
+      setReviewedOrders(prev => [...prev, selectedOrderForReview.rawId]);
+      setIsReviewModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Gagal mengirim ulasan.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const openDisputeModal = (order) => {
+    setSelectedOrderForDispute(order);
+    setDisputeReason('Barang Rusak');
+    setDisputeDescription('');
+    setIsDisputeModalOpen(true);
+  };
+
+  const submitDispute = async (e) => {
+    e.preventDefault();
+    if (disputeDescription.length < 10) {
+      alert('Deskripsi komplain minimal 10 karakter.');
+      return;
+    }
+    setDisputeSubmitting(true);
+    try {
+      await axios.post(`/api/orders/${selectedOrderForDispute.rawId}/disputes`, {
+        reason: disputeReason,
+        description: disputeDescription
+      });
+      setSuccessToastMessage("Komplain berhasil diajukan ke Pusat Resolusi.");
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 4000);
+      setDisputedOrders(prev => [...prev, selectedOrderForDispute.rawId]);
+      setIsDisputeModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Gagal mengajukan komplain.");
+    } finally {
+      setDisputeSubmitting(false);
+    }
+  };
+
   const handleBeliLangsung = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
@@ -313,13 +435,27 @@ export default function Dashboard() {
         quantity: parseInt(beliQty),
         notes: beliNotes
       };
-      await placeOrder(orderData);
-      setSuccessToastMessage(`Berhasil melakukan pembelian langsung untuk ${selectedProduct.name} sebanyak ${beliQty} ${selectedProduct.unit || 'kg'}!`);
+      const newOrder = await placeOrder(orderData);
+      
+      let toastMsg = `Berhasil melakukan pembelian langsung untuk ${selectedProduct.name} sebanyak ${beliQty} ${selectedProduct.unit || 'kg'}!`;
+
+      if (beliVoucherCode.trim()) {
+        try {
+          await axios.post('/api/vouchers/apply', { code: beliVoucherCode.trim(), order_id: newOrder.id });
+          toastMsg = `Pesanan berhasil dengan diskon promo dari voucher ${beliVoucherCode.trim()}!`;
+        } catch (voucherErr) {
+          console.error('Voucher error:', voucherErr.response?.data?.message);
+          alert(voucherErr.response?.data?.message || 'Kode voucher tidak valid atau kedaluwarsa. Pesanan tetap diproses tanpa diskon.');
+        }
+      }
+
+      setSuccessToastMessage(toastMsg);
       setIsSuccessToastVisible(true);
       setTimeout(() => setIsSuccessToastVisible(false), 4000);
       setIsBeliModalOpen(false);
       setBeliQty(50);
       setBeliNotes('');
+      setBeliVoucherCode('');
       fetchMyOrders();
     } catch (err) {
       console.error(err.response?.data?.message || 'Gagal melakukan pembelian langsung.');
@@ -485,6 +621,19 @@ export default function Dashboard() {
           <div>
             <p className="font-semibold text-sm text-[#0F172A]">Aksi Berhasil</p>
             <p className="text-xs text-[#64748B]">{successToastMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR TOAST NOTIFICATION */}
+      {isErrorToastVisible && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-red-200 bg-white p-4 shadow-lg transition-all duration-300 animate-fadeIn">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-[#0F172A]">Aksi Gagal</p>
+            <p className="text-xs text-[#64748B]">{errorToastMessage}</p>
           </div>
         </div>
       )}
@@ -984,12 +1133,14 @@ export default function Dashboard() {
                               <span>Sisa: 2 Hari</span>
                             </div>
 
-                            <button 
-                              onClick={() => triggerJoinCampaign(c)}
-                              className="w-full rounded-xl bg-[#16A34A]/10 py-2 text-center text-xs font-bold text-[#16A34A] hover:bg-[#16A34A] hover:text-white transition"
-                            >
-                              Gabung Patungan
-                            </button>
+                            {user && (
+                              <button 
+                                onClick={() => triggerJoinCampaign(c)}
+                                className="w-full rounded-xl bg-[#16A34A]/10 py-2 text-center text-xs font-bold text-[#16A34A] hover:bg-[#16A34A] hover:text-white transition"
+                              >
+                                Gabung Patungan
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1107,12 +1258,14 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          <button 
-                            onClick={() => triggerJoinCampaign(c)}
-                            className="w-full rounded-2xl bg-[#16A34A] py-3 text-center text-xs font-bold text-white shadow-md shadow-green-100 hover:bg-[#15803D] transition"
-                          >
-                            Gabung Sekarang
-                          </button>
+                          {user && (
+                            <button 
+                              onClick={() => triggerJoinCampaign(c)}
+                              className="w-full rounded-2xl bg-[#16A34A] py-3 text-center text-xs font-bold text-white shadow-md shadow-green-100 hover:bg-[#15803D] transition"
+                            >
+                              Gabung Sekarang
+                            </button>
+                          )}
                         </div>
                       ))}
                   </div>
@@ -1124,9 +1277,40 @@ export default function Dashboard() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="font-black text-xl text-[#0F172A] tracking-tight sm:text-2xl">
-                      Supplier Rekomendasi
+                      Supplier Rekomendasi & Peta Lokasi
                     </h2>
-                    <p className="text-xs text-[#64748B]">Kemitraan aman terintegrasi platform SirkelScore untuk kestabilan pasokan Anda.</p>
+                    <p className="text-xs text-[#64748B]">Temukan supplier terdekat dari lokasi Anda (Fitur Interaktif).</p>
+                  </div>
+
+                  {/* MAP SECTION */}
+                  <div className="w-full h-80 bg-slate-100 rounded-3xl overflow-hidden shadow-inner border border-slate-200 relative z-0">
+                    <MapContainer center={[-6.200000, 106.816666]} zoom={11} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      {recommendedSuppliers.map(s => {
+                        // Use supplier coordinates if available, otherwise mock nearby locations for demo
+                        const lat = s.latitude || -6.200000 + (Math.random() * 0.1 - 0.05);
+                        const lng = s.longitude || 106.816666 + (Math.random() * 0.1 - 0.05);
+                        return (
+                          <Marker key={s.id} position={[lat, lng]}>
+                            <Popup>
+                              <div className="text-center">
+                                <strong className="block text-sm text-slate-800">{s.supplier_name}</strong>
+                                <span className="text-xs text-amber-500 font-bold block mb-2">⭐ {s.rating} ({s.sirkel_score}/100)</span>
+                                <button 
+                                  onClick={() => openSupplierModal(s)}
+                                  className="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs hover:bg-emerald-700"
+                                >
+                                  Lihat Profil
+                                </button>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+                    </MapContainer>
                   </div>
 
                   {/* Grid layouts */}
@@ -1226,24 +1410,50 @@ export default function Dashboard() {
                             </td>
                             <td className="py-4 text-[#94A3B8]">{o.date}</td>
                             <td className="py-4 text-right">
-                              {o.status === 'Shipped' && (
-                                <button
-                                  onClick={() => handleCompleteOrder(o.rawId)}
-                                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
-                                >
-                                  Terima Barang
-                                </button>
-                              )}
-                              {(o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid' && (
-                                <button
-                                  onClick={() => openCheckout(o)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-green-700 shadow-sm"
-                                >
-                                  <DollarSign className="h-3.5 w-3.5" />
-                                  Bayar
-                                </button>
-                              )}
-                              {o.status !== 'Shipped' && !((o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid') && <span className="text-[#94A3B8]">-</span>}
+                              <div className="flex justify-end gap-2">
+                                {(o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid' && (
+                                  <button
+                                    onClick={() => openCheckout(o)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-green-700 shadow-sm"
+                                  >
+                                    <DollarSign className="h-3.5 w-3.5" />
+                                    Bayar
+                                  </button>
+                                )}
+                                {(o.status === 'Shipped' || o.status === 'Completed') && !disputedOrders.includes(o.rawId) && (
+                                  <button
+                                    onClick={() => openDisputeModal(o)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-[10px] font-bold text-rose-600 shadow-sm transition hover:bg-rose-100 active:scale-95"
+                                  >
+                                    Ajukan Komplain
+                                  </button>
+                                )}
+                                {(o.status === 'Shipped' || o.status === 'Completed') && disputedOrders.includes(o.rawId) && (
+                                  <span className="inline-flex items-center rounded-xl bg-rose-100 px-3.5 py-1.5 text-[10px] font-bold text-rose-700">
+                                    Dalam Resolusi
+                                  </span>
+                                )}
+                                {o.status === 'Shipped' && (
+                                  <button
+                                    onClick={() => handleCompleteOrder(o.rawId)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
+                                  >
+                                    Terima Barang
+                                  </button>
+                                )}
+                                {o.status === 'Completed' && !reviewedOrders.includes(o.rawId) && (
+                                  <button
+                                    onClick={() => openReviewModal(o)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+                                  >
+                                    Beri Ulasan
+                                  </button>
+                                )}
+                                {o.status === 'Completed' && reviewedOrders.includes(o.rawId) && (
+                                  <span className="inline-flex items-center rounded-xl bg-amber-50 px-3.5 py-1.5 text-[10px] font-bold text-amber-600">✔ Diulas</span>
+                                )}
+                                {o.status !== 'Shipped' && o.status !== 'Completed' && !((o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid') && <span className="text-[#94A3B8]">-</span>}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1489,6 +1699,25 @@ export default function Dashboard() {
                   rows={2}
                 />
               </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                  <Tag className="h-3.5 w-3.5 text-amber-500" />
+                  Kode Promo / Voucher (Opsional)
+                </label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={beliVoucherCode}
+                    onChange={(e) => setBeliVoucherCode(e.target.value.toUpperCase())}
+                    placeholder="Masukkan kode promo..."
+                    className="w-full rounded-xl border border-amber-200 bg-amber-50/30 px-3.5 py-2.5 pl-10 text-xs font-bold outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/25 uppercase placeholder:normal-case placeholder:font-normal text-amber-700"
+                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+                    <Sparkles className="h-4 w-4 text-amber-400" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-2.5 pt-2">
@@ -1721,6 +1950,77 @@ export default function Dashboard() {
 
       {/* UMKM CONFIRMATION MODAL - Global, rendered once, driven by useConfirmPopup hook */}
       <ConfirmModal {...modalProps} />
+
+      {/* REVIEW MODAL */}
+      {isReviewModalOpen && selectedOrderForReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsReviewModalOpen(false)}></div>
+          <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all animate-fadeIn">
+            <div className="border-b border-[#F1F5F9] px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-lg text-[#0F172A]">Beri Ulasan</h3>
+              <button onClick={() => setIsReviewModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={submitReview}>
+              <div className="px-6 py-5 space-y-5">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Pesanan: {selectedOrderForReview.product}</p>
+                  <p className="text-xs text-slate-500">Supplier: {selectedOrderForReview.supplier}</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#475569] mb-2">Rating</label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className={`transition ${star <= reviewRating ? 'text-amber-400' : 'text-slate-200 hover:text-amber-200'}`}
+                      >
+                        <Star className="h-8 w-8 fill-current" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-600 mt-2 font-medium">
+                    {reviewRating === 5 ? 'Sangat Bagus!' : reviewRating === 4 ? 'Bagus' : reviewRating === 3 ? 'Cukup' : reviewRating === 2 ? 'Kurang' : 'Sangat Kurang'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#475569] mb-1">Komentar & Pengalaman</label>
+                  <textarea 
+                    rows={4}
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Ceritakan pengalaman Anda bertransaksi dengan supplier ini (minimal 10 karakter)..."
+                    className="w-full rounded-xl border border-[#E2E8F0] px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    required
+                  ></textarea>
+                </div>
+              </div>
+              
+              <div className="bg-[#F8FAFC] px-6 py-4 flex justify-end gap-3 rounded-b-3xl">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="rounded-xl px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting || reviewComment.length < 10}
+                  className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {reviewSubmitting ? 'Mengirim...' : 'Kirim Ulasan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -6,7 +6,7 @@ export default function StaffTab({ setToast }) {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'staff' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', supplier_role: 'warehouse' });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function StaffTab({ setToast }) {
       await supplierStaffService.addStaff(formData);
       setToast({ visible: true, type: 'success', message: 'Staf berhasil ditambahkan.' });
       setIsModalOpen(false);
-      setFormData({ name: '', email: '', password: '', role: 'staff' });
+      setFormData({ name: '', email: '', password: '', supplier_role: 'warehouse' });
       fetchStaff();
     } catch (err) {
       setToast({ visible: true, type: 'error', message: err.response?.data?.message || 'Gagal menambahkan staf.' });
@@ -133,9 +133,9 @@ export default function StaffTab({ setToast }) {
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 uppercase">Hak Akses</label>
-                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="mt-1 w-full p-2 border rounded-lg text-sm outline-none focus:border-emerald-500">
+                <select value={formData.supplier_role} onChange={e => setFormData({...formData, supplier_role: e.target.value})} className="mt-1 w-full p-2 border rounded-lg text-sm outline-none focus:border-emerald-500">
                   <option value="admin">Admin Toko</option>
-                  <option value="staff">Staf Operasional</option>
+                  <option value="warehouse">Staf Gudang/Operasional</option>
                   <option value="finance">Keuangan</option>
                 </select>
               </div>

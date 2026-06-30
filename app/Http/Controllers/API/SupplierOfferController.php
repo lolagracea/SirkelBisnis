@@ -68,6 +68,9 @@ class SupplierOfferController extends Controller
                 ]
             );
 
+            // Broadcast the event for Live Bidding
+            broadcast(new \App\Events\SupplierOfferSubmitted($offer));
+
             return response()->json([
                 'success' => true,
                 'message' => 'Penawaran harga berhasil diajukan.',
