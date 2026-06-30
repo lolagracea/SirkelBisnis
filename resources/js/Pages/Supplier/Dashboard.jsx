@@ -962,7 +962,7 @@ export default function Dashboard({ flash = {} } = {}) {
         </header>
 
         {/* Dashboard Content Container */}
-        <main className="p-6 md:p-8 space-y-6 max-w-7xl w-full mx-auto flex-1">
+        <main className="p-6 md:p-8 space-y-6 w-full flex-1">
           {/* Global Toast Feedback Banner */}
           {toast.visible && (
             <div className={`border-l-4 p-4 rounded-r-lg shadow-sm flex items-center justify-between animate-fadeIn mb-6 ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-600' : 'bg-rose-50 border-rose-600'}`}>

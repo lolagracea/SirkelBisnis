@@ -577,7 +577,7 @@ export default function Dashboard() {
         </header>
 
         {/* MAIN DASHBOARD CONTENT */}
-        <main className="p-8 max-w-7xl mx-auto space-y-8">
+        <main className="p-8 space-y-8">
           
           {/* FAKE LOADER SKELETON */}
           {isLoading ? (
