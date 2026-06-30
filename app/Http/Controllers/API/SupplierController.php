@@ -22,6 +22,16 @@ class SupplierController extends Controller
         try {
             $query = SupplierProfile::with('user');
 
+            // Filter: search by supplier name / description / address
+            if ($request->filled('search')) {
+                $search = $request->query('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('supplier_name', 'like', '%' . $search . '%')
+                      ->orWhere('description', 'like', '%' . $search . '%')
+                      ->orWhere('address', 'like', '%' . $search . '%');
+                });
+            }
+
             // Filter: verified
             if ($request->has('verified')) {
                 $verified = filter_var($request->query('verified'), FILTER_VALIDATE_BOOLEAN);
@@ -44,7 +54,11 @@ class SupplierController extends Controller
                 }
             }
 
-            $suppliers = $query->paginate(10);
+            // Allow caller to control page size (default 10, capped at 100)
+            $perPage = (int) $request->query('per_page', 10);
+            $perPage = $perPage > 0 ? min($perPage, 100) : 10;
+
+            $suppliers = $query->paginate($perPage);
             $resource = SupplierResource::collection($suppliers);
             $responseData = $resource->response()->getData(true);
 

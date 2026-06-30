@@ -58,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-group-buyings', [GroupBuyingController::class, 'myGroupBuyings']);
     Route::get('/joined-group-buyings', [GroupBuyingController::class, 'joinedGroupBuyings']);
 
-    Route::middleware('role:umkm')->group(function () {
+    Route::middleware('role:umkm,sanctum')->group(function () {
         Route::post('/group-buyings', [GroupBuyingController::class, 'store']);
         Route::post('/group-buyings/{id}/join', [GroupBuyingController::class, 'join']);
         Route::delete('/group-buyings/{id}', [GroupBuyingController::class, 'destroy']);
@@ -69,12 +69,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::patch('/orders/{id}/payment', [OrderController::class, 'updatePayment']);
 
-    Route::middleware('role:umkm')->group(function () {
+    Route::middleware('role:umkm,sanctum')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/my-orders', [OrderController::class, 'myOrders']);
     });
 
-    Route::middleware('role:supplier')->group(function () {
+    Route::middleware('role:supplier,sanctum')->group(function () {
         Route::get('/supplier-orders', [OrderController::class, 'supplierOrders']);
         Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
         // Supplier Offer (Tawarkan Harga pada Group Buying)
@@ -173,7 +173,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reviews/{id}', [ReviewController::class, 'show']);
     Route::get('/suppliers/{id}/reviews', [ReviewController::class, 'supplierReviews']);
 
-    Route::middleware('role:umkm')->group(function () {
+    Route::middleware('role:umkm,sanctum')->group(function () {
         Route::post('/reviews', [ReviewController::class, 'store']);
         Route::put('/reviews/{id}', [ReviewController::class, 'update']);
         Route::get('/my-reviews', [ReviewController::class, 'myReviews']);
@@ -219,9 +219,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 });
-
-
-
-
-
-

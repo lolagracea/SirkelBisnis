@@ -175,14 +175,12 @@ export default function Dashboard({ flash = {} } = {}) {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const supplier = user?.profile || {
-    id: 1,
-    supplier_name: 'Mitra Supplier',
-    description: 'Penyedia bahan baku terpercaya',
-    address: 'Kota Malang',
-    rating: 5.0,
-    sirkel_score: 92
-  };
+  // IMPORTANT: do NOT fall back to a hardcoded dummy supplier here.
+  // Previously this defaulted to `{ id: 1, ... }` whenever `user.profile`
+  // was missing/null, which silently submitted the WRONG supplier_id
+  // (belonging to a different supplier account) and caused every write
+  // action (e.g. creating a product) to fail with a 403 Unauthorized.
+  const supplier = user?.profile || null;
 
   // Load data on mount
   useEffect(() => {
@@ -191,7 +189,7 @@ export default function Dashboard({ flash = {} } = {}) {
       setIsLoading(true);
       try {
         await Promise.all([
-          fetchProducts(),
+          fetchProducts({ supplier_id: supplier.id, per_page: 100 }),
           fetchSupplierOrders(),
           fetchGroupBuyings(),
           fetchSupplierReviews(supplier.id).catch(err => console.error('Reviews error:', err)),
@@ -380,6 +378,14 @@ export default function Dashboard({ flash = {} } = {}) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!supplier?.id) {
+      setToast({
+        visible: true,
+        type: 'error',
+        message: 'Profil supplier belum termuat. Silakan muat ulang halaman atau login ulang sebelum menambah produk.'
+      });
+      return;
+    }
     setProcessing(true);
     setErrors({});
     try {
@@ -390,8 +396,15 @@ export default function Dashboard({ flash = {} } = {}) {
       formData.append('stock', parseInt(data.stock));
       formData.append('unit', data.unit);
       formData.append('description', data.description || '');
-      formData.append('supplier_id', supplier.id);
-      
+      // NOTE: We deliberately do NOT send `supplier_id` here.
+      // ProductController::store() already resolves it securely from
+      // auth()->user()->supplierProfile when it's omitted. Sending it
+      // from the client opened the door to mismatches (e.g. stale/cached
+      // `user.profile` in localStorage) that caused 403 Unauthorized
+      // errors even for the product's rightful owner. Letting the
+      // backend derive it from the authenticated session removes that
+      // entire class of bugs.
+
       if (data.image) {
         formData.append('image', data.image);
       }
@@ -517,7 +530,7 @@ export default function Dashboard({ flash = {} } = {}) {
       setToast({ visible: true, type: 'success', message: `Berhasil import ${res.data.data.imported} produk. Gagal: ${res.data.data.failed}` });
       setIsUploadModalOpen(false);
       setUploadFile(null);
-      fetchProducts();
+      fetchProducts({ supplier_id: supplier.id, per_page: 100 });
     } catch (err) {
       setToast({ visible: true, type: 'error', message: err.response?.data?.message || 'Gagal upload file.' });
     } finally {
@@ -527,6 +540,14 @@ export default function Dashboard({ flash = {} } = {}) {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    if (!supplier?.id) {
+      setToast({
+        visible: true,
+        type: 'error',
+        message: 'Profil supplier belum termuat. Silakan muat ulang halaman atau login ulang.'
+      });
+      return;
+    }
     setProfileSaving(true);
     try {
       await supplierService.updateSupplier(supplier.id, profileForm);
@@ -633,8 +654,8 @@ export default function Dashboard({ flash = {} } = {}) {
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans antialiased text-[#1E293B]">
       {/* Sidebar for desktop and mobile */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out`}>
-        <div className="flex-1 flex flex-col">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-[#E2E8F0] bg-white px-5 py-6 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:fixed transition-transform duration-300 ease-in-out overflow-hidden`}>
+        <div className="flex flex-1 flex-col min-h-0">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 mb-8 h-10 shrink-0">
             <div className="flex items-center gap-3">
@@ -652,7 +673,7 @@ export default function Dashboard({ flash = {} } = {}) {
           </div>
 
           {/* Sidebar Menu Links */}
-          <nav className="flex-1 space-y-1.5 px-1 overflow-y-auto">
+          <nav className="flex-1 min-h-0 overflow-y-auto space-y-1.5 px-1 pr-2">
             <button 
               onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
               className={`flex w-full items-center gap-3.5 rounded-xl px-4 py-3 font-medium text-sm transition-all duration-200 ${
