@@ -30,6 +30,17 @@ class UpdateProductRequest extends FormRequest
             'stock' => ['sometimes', 'required', 'integer', 'min:0'],
             'unit' => ['sometimes', 'required', 'string', 'max:50'],
             'image' => ['nullable'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.id' => ['nullable', 'integer', 'exists:product_variants,id'],
+            'variants.*.name' => ['required_with:variants', 'string'],
+            'variants.*.sku' => ['nullable', 'string'],
+            'variants.*.price_adjustment' => ['nullable', 'numeric'],
+            'variants.*.stock' => ['nullable', 'integer', 'min:0'],
+            'tier_prices' => ['nullable', 'array'],
+            'tier_prices.*.id' => ['nullable', 'integer', 'exists:product_tier_prices,id'],
+            'tier_prices.*.min_qty' => ['required_with:tier_prices', 'integer', 'min:1'],
+            'tier_prices.*.max_qty' => ['nullable', 'integer', 'min:1'],
+            'tier_prices.*.price' => ['required_with:tier_prices', 'numeric', 'min:0'],
         ];
     }
 }

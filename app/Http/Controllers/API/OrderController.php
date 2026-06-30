@@ -162,6 +162,13 @@ class OrderController extends Controller
             }
 
             $updatedOrder = $this->orderService->updateStatus($request->user(), $order, $request->status);
+            $extraData = $request->only(['shipping_courier', 'tracking_number']);
+            $updatedOrder = $this->orderService->updateStatus(
+                $request->user(),
+                $order,
+                $request->status,
+                $extraData
+            );
 
             return response()->json([
                 'success' => true,
@@ -208,6 +215,38 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui pembayaran: ' . $e->getMessage(), 'data' => null], 500);
+        }
+    }
+
+    public function bulkUpdateStatus(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'order_ids' => 'required|array',
+                'order_ids.*' => 'integer|exists:orders,id',
+                'status' => 'required|string',
+            ]);
+
+            $supplierProfile = $request->user()->supplierProfile;
+            $supplierId = $supplierProfile ? $supplierProfile->id : $request->user()->supplier_id;
+            
+            $orders = Order::whereIn('id', $request->order_ids)
+                ->where('supplier_id', $supplierId)
+                ->get();
+
+            foreach ($orders as $order) {
+                $this->orderService->updateStatus($request->user(), $order, $request->status);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bulk update successful',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bulk update failed: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

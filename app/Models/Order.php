@@ -80,4 +80,24 @@ class Order extends Model
     {
         return $this->hasOne(Review::class);
     }
+
+    public function dispute(): HasOne
+    {
+        return $this->hasOne(Dispute::class);
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
+    public function returnRequest(): HasOne
+    {
+        return $this->hasOne(ReturnRequest::class);
+    }
 }

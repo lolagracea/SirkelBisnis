@@ -54,11 +54,11 @@ export default function useOrders() {
     }
   };
 
-  const changeStatus = async (id, status) => {
+  const changeStatus = async (id, status, extraData = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await orderService.updateOrderStatus(id, status);
+      const response = await orderService.updateOrderStatus(id, status, extraData);
       const updated = response.data || response;
       setOrders((prev) =>
         prev.map((o) => (o.id === id || o.order_code === id ? { ...o, status: updated.status } : o))

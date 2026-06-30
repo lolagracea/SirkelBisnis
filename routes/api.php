@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\SirkelScoreController;
 use App\Http\Controllers\API\SupplierController;
+use App\Http\Controllers\API\SupplierOfferController;
 use App\Http\Controllers\API\AIReviewSummaryController;
 use App\Http\Controllers\API\BusinessInsightController;
 use App\Http\Controllers\API\RestockPredictionController;
@@ -76,7 +77,96 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:supplier')->group(function () {
         Route::get('/supplier-orders', [OrderController::class, 'supplierOrders']);
         Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+        // Supplier Offer (Tawarkan Harga pada Group Buying)
+        Route::post('/group-buyings/{id}/offer', [SupplierOfferController::class, 'store']);
+        Route::get('/my-offers', [SupplierOfferController::class, 'myOffers']);
+        
+        // Supplier Wallet & Analytics
+        Route::get('/wallet', [\App\Http\Controllers\API\SupplierWalletController::class, 'summary']);
+        Route::post('/wallet/withdraw', [\App\Http\Controllers\API\SupplierWalletController::class, 'withdraw']);
+        Route::get('/analytics/supplier', [\App\Http\Controllers\API\SupplierAnalyticsController::class, 'index']);
+        Route::get('/products/{productId}/stock-ledger', [\App\Http\Controllers\API\StockLedgerController::class, 'getByProduct']);
+
+        // Bulk Upload Products
+        Route::post('/products/import', [\App\Http\Controllers\API\ProductImportController::class, 'import']);
+
+        // Vouchers
+        Route::get('/vouchers', [\App\Http\Controllers\API\VoucherController::class, 'index']);
+        Route::post('/vouchers', [\App\Http\Controllers\API\VoucherController::class, 'store']);
+        Route::put('/vouchers/{id}', [\App\Http\Controllers\API\VoucherController::class, 'update']);
+        Route::delete('/vouchers/{id}', [\App\Http\Controllers\API\VoucherController::class, 'destroy']);
+
+        // Stock Adjustment
+        Route::post('/products/{productId}/stock-adjustment', [\App\Http\Controllers\API\StockAdjustmentController::class, 'store']);
+        
+        // Supplier Bank Accounts
+        Route::get('/supplier-bank-accounts', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'index']);
+        Route::post('/supplier-bank-accounts', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'store']);
+        Route::put('/supplier-bank-accounts/{id}', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'update']);
+        Route::delete('/supplier-bank-accounts/{id}', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'destroy']);
+        
+        // Supplier CRM
+        Route::get('/supplier-crm/customers', [\App\Http\Controllers\API\SupplierCRMController::class, 'getCustomers']);
+        Route::post('/supplier-crm/broadcast', [\App\Http\Controllers\API\SupplierCRMController::class, 'broadcast']);
+
+        // Bulk Actions
+        Route::post('/supplier-orders/bulk-status', [\App\Http\Controllers\API\OrderController::class, 'bulkUpdateStatus']);
+
+        // Tax Report
+        Route::get('/analytics/tax-report', [\App\Http\Controllers\API\SupplierAnalyticsController::class, 'taxReport']);
+
+        // Supplier Staff
+        Route::get('/supplier-staff', [\App\Http\Controllers\Api\Supplier\SupplierStaffController::class, 'index']);
+        Route::post('/supplier-staff', [\App\Http\Controllers\Api\Supplier\SupplierStaffController::class, 'store']);
+        Route::delete('/supplier-staff/{id}', [\App\Http\Controllers\Api\Supplier\SupplierStaffController::class, 'destroy']);
+
+        // Returns / RMA (Supplier side)
+        Route::get('/supplier-returns', [\App\Http\Controllers\Api\Supplier\ReturnRequestController::class, 'index']);
+        Route::patch('/supplier-returns/{id}/status', [\App\Http\Controllers\Api\Supplier\ReturnRequestController::class, 'updateStatus']);
+
+        // Procurement
+        Route::get('/procurement/manufacturers', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'indexManufacturers']);
+        Route::post('/procurement/manufacturers', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'storeManufacturer']);
+        Route::get('/procurement/purchase-orders', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'indexPurchaseOrders']);
+        Route::post('/procurement/purchase-orders', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'storePurchaseOrder']);
+        Route::post('/procurement/purchase-orders/{id}/receive', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'receivePurchaseOrder']);
+        
+        // Advanced B2B Features
+        Route::get('/warehouses', [\App\Http\Controllers\API\WarehouseController::class, 'index']);
+        Route::post('/warehouses', [\App\Http\Controllers\API\WarehouseController::class, 'store']);
+        Route::delete('/warehouses/{id}', [\App\Http\Controllers\API\WarehouseController::class, 'destroy']);
+        
+        Route::get('/credit-limits', [\App\Http\Controllers\API\CreditLimitController::class, 'index']);
+        Route::post('/credit-limits', [\App\Http\Controllers\API\CreditLimitController::class, 'store']);
+        
+        Route::get('/rfqs/supplier', [\App\Http\Controllers\API\RfqController::class, 'supplierIndex']);
+        Route::post('/rfqs/{id}/offer', [\App\Http\Controllers\API\RfqController::class, 'storeOffer']);
+        
+        Route::get('/subscriptions/supplier', [\App\Http\Controllers\API\SubscriptionController::class, 'index']);
+        
+        Route::get('/webhook-endpoints', [\App\Http\Controllers\API\WebhookController::class, 'index']);
+        Route::post('/webhook-endpoints', [\App\Http\Controllers\API\WebhookController::class, 'store']);
+        
+        Route::get('/sponsored-products', [\App\Http\Controllers\API\SponsoredProductController::class, 'index']);
+        Route::post('/sponsored-products', [\App\Http\Controllers\API\SponsoredProductController::class, 'store']);
     });
+
+    // Chat Routes (both UMKM and Supplier)
+    Route::get('/chats', [\App\Http\Controllers\API\ChatController::class, 'index']);
+    Route::get('/chats/{id}', [\App\Http\Controllers\API\ChatController::class, 'show']);
+    Route::post('/chats/{id}/message', [\App\Http\Controllers\API\ChatController::class, 'sendMessage']);
+    Route::post('/chats/start', [\App\Http\Controllers\API\ChatController::class, 'startChat']);
+
+    // Invoice Routes
+    Route::get('/invoices', [\App\Http\Controllers\API\InvoiceController::class, 'index']);
+    Route::get('/invoices/{id}', [\App\Http\Controllers\API\InvoiceController::class, 'show']);
+    Route::post('/invoices/{id}/pay', [\App\Http\Controllers\API\InvoiceController::class, 'pay']); // for UMKM
+    Route::patch('/invoices/{id}/status', [\App\Http\Controllers\API\InvoiceController::class, 'updateStatus']); // for Supplier
+
+    // Dispute (RMA) Routes
+    Route::get('/disputes', [\App\Http\Controllers\API\DisputeController::class, 'index']);
+    Route::post('/orders/{orderId}/disputes', [\App\Http\Controllers\API\DisputeController::class, 'store']); // UMKM create
+    Route::patch('/disputes/{id}/status', [\App\Http\Controllers\API\DisputeController::class, 'updateStatus']); // Supplier update
 
     // Review Routes
     Route::get('/reviews', [ReviewController::class, 'index']);
@@ -87,6 +177,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reviews', [ReviewController::class, 'store']);
         Route::put('/reviews/{id}', [ReviewController::class, 'update']);
         Route::get('/my-reviews', [ReviewController::class, 'myReviews']);
+        
+        // Apply Voucher
+        Route::post('/vouchers/apply', [\App\Http\Controllers\API\VoucherController::class, 'apply']);
+
+        // Returns / RMA (UMKM side)
+        Route::post('/my-returns', [\App\Http\Controllers\Api\Supplier\ReturnRequestController::class, 'store']);
+        
+        // Advanced B2B Features
+        Route::get('/rfqs/umkm', [\App\Http\Controllers\API\RfqController::class, 'umkmIndex']);
+        Route::post('/subscriptions', [\App\Http\Controllers\API\SubscriptionController::class, 'store']);
     });
 
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);

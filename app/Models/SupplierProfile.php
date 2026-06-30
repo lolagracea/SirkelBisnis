@@ -20,6 +20,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'verified',
     'rating',
     'sirkel_score',
+    'operating_days',
+    'open_time',
+    'close_time',
+    'vacation_mode',
+    'return_policy',
+    'npwp',
+    'tax_rate',
 ])]
 class SupplierProfile extends Model
 {
@@ -36,6 +43,8 @@ class SupplierProfile extends Model
         'sirkel_score' => 'float',
         'latitude' => 'float',
         'longitude' => 'float',
+        'operating_days' => 'array',
+        'vacation_mode' => 'boolean',
     ];
     /**
      * Get the user that owns the supplier profile.
@@ -75,6 +84,31 @@ class SupplierProfile extends Model
     public function reviewSummary(): HasOne
     {
         return $this->hasOne(ReviewSummary::class, 'supplier_id');
+    }
+
+    public function bankAccounts(): HasMany
+    {
+        return $this->hasMany(SupplierBankAccount::class, 'supplier_id');
+    }
+
+    public function customers(): HasMany
+    {
+        return $this->hasMany(SupplierCustomer::class, 'supplier_id');
+    }
+
+    public function staffs(): HasMany
+    {
+        return $this->hasMany(User::class, 'supplier_id');
+    }
+
+    public function manufacturers(): HasMany
+    {
+        return $this->hasMany(Manufacturer::class, 'supplier_id');
+    }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'supplier_id');
     }
 }
 

@@ -17,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'stock',
     'unit',
     'image',
+    'weight',
+    'length',
+    'width',
+    'height',
 ])]
 class Product extends Model
 {
@@ -43,5 +47,15 @@ class Product extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function tierPrices(): HasMany
+    {
+        return $this->hasMany(ProductTierPrice::class);
     }
 }

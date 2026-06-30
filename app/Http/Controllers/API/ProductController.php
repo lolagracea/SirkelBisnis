@@ -21,7 +21,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Product::with('supplier');
+            $query = Product::with(['supplier', 'variants', 'tierPrices']);
 
             // Search by name
             if ($request->has('name')) {
@@ -92,12 +92,15 @@ class ProductController extends Controller
                 }
 
                 // Check if user is authorized to add products to this supplier profile (owner or admin)
-                if (auth()->check() && auth()->id() !== $supplier->user_id && !auth()->user()->isRole('admin')) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized action.',
-                        'data' => null
-                    ], 403);
+                if (auth()->check() && !auth()->user()->isRole('admin')) {
+                    $userSupplierProfile = auth()->user()->supplierProfile;
+                    if (!$userSupplierProfile || $userSupplierProfile->id !== (int) $supplierId) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Unauthorized action.',
+                            'data' => null
+                        ], 403);
+                    }
                 }
             }
 
@@ -108,10 +111,22 @@ class ProductController extends Controller
             }
             $product = Product::create($data);
 
+            if ($request->has('variants')) {
+                foreach ($request->input('variants') as $variantData) {
+                    $product->variants()->create($variantData);
+                }
+            }
+
+            if ($request->has('tier_prices')) {
+                foreach ($request->input('tier_prices') as $tierData) {
+                    $product->tierPrices()->create($tierData);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product created successfully',
-                'data' => new ProductResource($product->load('supplier'))
+                'data' => new ProductResource($product->load(['supplier', 'variants', 'tierPrices']))
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -128,7 +143,7 @@ class ProductController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $product = Product::with('supplier')->findOrFail($id);
+            $product = Product::with(['supplier', 'variants', 'tierPrices'])->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -157,15 +172,18 @@ class ProductController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            $supplier = $product->supplier;
 
-            // Check if user is authorized to update this product (owner of the supplier profile or admin)
-            if (auth()->check() && auth()->id() !== $supplier->user_id && !auth()->user()->isRole('admin')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized action.',
-                    'data' => null
-                ], 403);
+            // Check authorization: the authenticated user must own the supplier profile
+            // that this product belongs to, or be an admin.
+            if (auth()->check() && !auth()->user()->isRole('admin')) {
+                $userSupplierProfile = auth()->user()->supplierProfile;
+                if (!$userSupplierProfile || $userSupplierProfile->id !== (int) $product->supplier_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized action.',
+                        'data' => null
+                    ], 403);
+                }
             }
 
             $data = $request->validated();
@@ -175,10 +193,37 @@ class ProductController extends Controller
             }
             $product->update($data);
 
+            if ($request->has('variants')) {
+                // Delete existing ones not in the request
+                $incomingVariantIds = collect($request->input('variants'))->pluck('id')->filter()->toArray();
+                $product->variants()->whereNotIn('id', $incomingVariantIds)->delete();
+
+                foreach ($request->input('variants') as $variantData) {
+                    if (isset($variantData['id'])) {
+                        $product->variants()->where('id', $variantData['id'])->update($variantData);
+                    } else {
+                        $product->variants()->create($variantData);
+                    }
+                }
+            }
+
+            if ($request->has('tier_prices')) {
+                $incomingTierIds = collect($request->input('tier_prices'))->pluck('id')->filter()->toArray();
+                $product->tierPrices()->whereNotIn('id', $incomingTierIds)->delete();
+
+                foreach ($request->input('tier_prices') as $tierData) {
+                    if (isset($tierData['id'])) {
+                        $product->tierPrices()->where('id', $tierData['id'])->update($tierData);
+                    } else {
+                        $product->tierPrices()->create($tierData);
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product updated successfully',
-                'data' => new ProductResource($product->load('supplier'))
+                'data' => new ProductResource($product->load(['supplier', 'variants', 'tierPrices']))
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -202,15 +247,18 @@ class ProductController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            $supplier = $product->supplier;
 
-            // Check if user is authorized to delete this product (owner of the supplier profile or admin)
-            if (auth()->check() && auth()->id() !== $supplier->user_id && !auth()->user()->isRole('admin')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized action.',
-                    'data' => null
-                ], 403);
+            // Check authorization: the authenticated user must own the supplier profile
+            // that this product belongs to, or be an admin.
+            if (auth()->check() && !auth()->user()->isRole('admin')) {
+                $userSupplierProfile = auth()->user()->supplierProfile;
+                if (!$userSupplierProfile || $userSupplierProfile->id !== (int) $product->supplier_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized action.',
+                        'data' => null
+                    ], 403);
+                }
             }
 
             $product->delete();

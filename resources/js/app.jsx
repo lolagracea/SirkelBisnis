@@ -7,6 +7,7 @@ import Login from './Pages/Auth/Login';
 import Register from './Pages/Auth/Register';
 import UmkmDashboard from './Pages/UMKM/Dashboard';
 import SupplierDashboard from './Pages/Supplier/Dashboard';
+import PrintInvoice from './Pages/Supplier/PrintInvoice';
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -54,6 +55,14 @@ function MainApp() {
         element={
           <ProtectedRoute requiredRole="supplier">
             <SupplierDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/supplier/orders/:id/invoice" 
+        element={
+          <ProtectedRoute requiredRole="supplier">
+            <PrintInvoice />
           </ProtectedRoute>
         } 
       />

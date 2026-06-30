@@ -49,6 +49,14 @@ class OrderService
                 'notes' => $data['notes'] ?? null,
             ]);
 
+            // Create Invoice with 30 days tempo for B2B
+            $order->invoice()->create([
+                'amount' => $totalPrice,
+                'payment_term_days' => 30,
+                'due_date' => now()->addDays(30),
+                'status' => 'unpaid'
+            ]);
+
             // Notify Supplier
             $supplierProfile = \App\Models\SupplierProfile::find($supplierId);
             if ($supplierProfile && $supplierProfile->user_id) {
@@ -108,6 +116,14 @@ class OrderService
                     'notes' => 'Pesanan otomatis dari program Group Buying #' . $groupBuying->id,
                 ]);
 
+                // Create Invoice with 30 days tempo for B2B
+                $order->invoice()->create([
+                    'amount' => $totalPrice,
+                    'payment_term_days' => 30,
+                    'due_date' => now()->addDays(30),
+                    'status' => 'unpaid'
+                ]);
+
                 $orders[] = $order;
 
                 // Notify Supplier
@@ -137,7 +153,7 @@ class OrderService
     /**
      * Update the status of the order. Only supplier can update.
      */
-    public function updateStatus(User $user, Order $order, string $newStatus): Order
+    public function updateStatus(User $user, Order $order, string $newStatus, array $extraData = []): Order
     {
         // Business Rule: Only the order's supplier can update status
         $supplierProfile = $order->supplier;
@@ -173,7 +189,49 @@ class OrderService
         }
 
         $order->status = $newStatus;
+        
+        // Handle Logistics info
+        if ($newStatus === 'shipped') {
+            if (isset($extraData['shipping_courier'])) {
+                $order->shipping_courier = $extraData['shipping_courier'];
+            }
+            if (isset($extraData['tracking_number'])) {
+                $order->tracking_number = $extraData['tracking_number'];
+            }
+        }
+        
         $order->save();
+
+        // Handle Stock & Wallet Business Logic
+        if ($newStatus === 'processing') {
+            // Deduct stock when processing starts
+            $product = $order->product;
+            if ($product) {
+                $product->stock = max(0, $product->stock - $order->quantity);
+                $product->save();
+
+                \App\Models\StockLedger::create([
+                    'product_id' => $product->id,
+                    'change_amount' => -$order->quantity,
+                    'reason' => "Pesanan diproses: {$order->order_code}",
+                ]);
+            }
+        } elseif ($newStatus === 'completed') {
+            // Add funds to supplier wallet when order is completed
+            $supplierProfile = $order->supplier;
+            if ($supplierProfile) {
+                $supplierProfile->balance += $order->total_price;
+                $supplierProfile->save();
+
+                \App\Models\WalletTransaction::create([
+                    'supplier_id' => $supplierProfile->id,
+                    'amount' => $order->total_price,
+                    'type' => 'income',
+                    'status' => 'completed',
+                    'description' => "Pendapatan dari pesanan {$order->order_code}",
+                ]);
+            }
+        }
 
         // Notify UMKM Buyer with customized, friendly messages
         $title = 'Status Pesanan Diperbarui';

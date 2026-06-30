@@ -25,6 +25,8 @@ use Spatie\Permission\Traits\HasRoles;
     'permissions',
     'last_login_at',
     'password',
+    'supplier_id',
+    'supplier_role',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -55,6 +57,11 @@ class User extends Authenticatable
     public function supplierProfile(): HasOne
     {
         return $this->hasOne(SupplierProfile::class);
+    }
+
+    public function supplier(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(SupplierProfile::class, 'supplier_id');
     }
 
     public function activityLogs(): HasMany

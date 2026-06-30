@@ -5,15 +5,29 @@ export default function useProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+  });
 
   const fetchProducts = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
     try {
       const data = await productService.getProducts(params);
-      // Backend returns a paginated list or direct array under 'data' or directly
       const list = Array.isArray(data) ? data : (data.data || []);
       setProducts(list);
+      // Store pagination meta if available
+      if (data?.meta) {
+        setPagination({
+          total: data.meta.total ?? list.length,
+          current_page: data.meta.current_page ?? 1,
+          last_page: data.meta.last_page ?? 1,
+          per_page: data.meta.per_page ?? 10,
+        });
+      }
       return list;
     } catch (err) {
       setError(err.response?.data?.message || 'Gagal memuat produk.');
@@ -22,6 +36,15 @@ export default function useProducts() {
       setLoading(false);
     }
   }, []);
+
+  /**
+   * Fetch a specific page of products.
+   * @param {number} page - Page number (1-indexed)
+   * @param {object} extraParams - Additional query params (e.g. supplier_id)
+   */
+  const fetchProductsPage = useCallback(async (page = 1, extraParams = {}) => {
+    return fetchProducts({ page, ...extraParams });
+  }, [fetchProducts]);
 
   const addProduct = async (productData) => {
     setLoading(true);
@@ -73,9 +96,12 @@ export default function useProducts() {
     products,
     loading,
     error,
+    pagination,
     fetchProducts,
+    fetchProductsPage,
     addProduct,
     editProduct,
     removeProduct,
   };
 }
+

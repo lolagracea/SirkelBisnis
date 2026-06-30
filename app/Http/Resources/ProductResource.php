@@ -27,6 +27,8 @@ class ProductResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
+            'variants' => $this->whenLoaded('variants'),
+            'tier_prices' => $this->whenLoaded('tierPrices'),
         ];
     }
 }
