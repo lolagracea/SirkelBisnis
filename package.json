@@ -26,5 +26,23 @@
         "react-router-dom": "^7.18.0",
         "react-select": "^5.10.2",
         "recharts": "^3.9.0"
-    }
+    },
+    "name": "sirkelbisnis",
+    "version": "1.0.0",
+    "description": "<p align=\"center\"><a href=\"https://laravel.com\" target=\"_blank\"><img src=\"https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg\" width=\"400\" alt=\"Laravel Logo\"></a></p>",
+    "main": "vite.config.js",
+    "directories": {
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lolagracea/SirkelBisnis.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/lolagracea/SirkelBisnis/issues"
+    },
+    "homepage": "https://github.com/lolagracea/SirkelBisnis#readme"
 }
