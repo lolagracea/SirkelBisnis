@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\API\CheckoutController;
 use App\Http\Controllers\API\GroupBuyingController;
 use App\Http\Controllers\API\OrderController;
+use App\Http\Controllers\API\XenditWebhookController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\SirkelScoreController;
@@ -47,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/suppliers', [SupplierController::class, 'store']);
     Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
     Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
+    Route::get('/products/{productId}/warehouse-stock', [\App\Http\Controllers\API\WarehouseController::class, 'stockByProduct']);
 
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
@@ -61,7 +64,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:umkm')->group(function () {
         Route::post('/group-buyings', [GroupBuyingController::class, 'store']);
         Route::post('/group-buyings/{id}/join', [GroupBuyingController::class, 'join']);
-        Route::delete('/group-buyings/{id}', [GroupBuyingController::class, 'destroy']);
+        Route::delete('/group-buyings/{id}', [GroupBuyingController::class, 'destroy']);Route::get('/rfqs/umkm', [\App\Http\Controllers\API\RfqController::class, 'umkmIndex']); // sudah ada
+        Route::post('/rfqs', [\App\Http\Controllers\API\RfqController::class, 'store']);
+        Route::post('/rfqs/offers/{offerId}/accept', [\App\Http\Controllers\API\RfqController::class, 'acceptOffer']);
+        Route::delete('/rfqs/{id}', [\App\Http\Controllers\API\RfqController::class, 'cancel']);
+        Route::get('/my-subscriptions', [\App\Http\Controllers\API\SubscriptionController::class, 'umkmIndex']);
+        Route::put('/my-subscriptions/{id}', [\App\Http\Controllers\API\SubscriptionController::class, 'update']);
+        Route::patch('/my-subscriptions/{id}/status', [\App\Http\Controllers\API\SubscriptionController::class, 'updateStatus']);
+        Route::get('/my-credit-limits', [\App\Http\Controllers\API\CreditLimitController::class, 'umkmIndex']);
+    Route::get('/suppliers/{supplierId}/my-credit-limit', [\App\Http\Controllers\API\CreditLimitController::class, 'umkmShowForSupplier']);
+
     });
 
     // Order Routes
@@ -80,7 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Supplier Offer (Tawarkan Harga pada Group Buying)
         Route::post('/group-buyings/{id}/offer', [SupplierOfferController::class, 'store']);
         Route::get('/my-offers', [SupplierOfferController::class, 'myOffers']);
-        
+
         // Supplier Wallet & Analytics
         Route::get('/wallet', [\App\Http\Controllers\API\SupplierWalletController::class, 'summary']);
         Route::post('/wallet/withdraw', [\App\Http\Controllers\API\SupplierWalletController::class, 'withdraw']);
@@ -98,13 +110,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Stock Adjustment
         Route::post('/products/{productId}/stock-adjustment', [\App\Http\Controllers\API\StockAdjustmentController::class, 'store']);
-        
+
         // Supplier Bank Accounts
         Route::get('/supplier-bank-accounts', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'index']);
         Route::post('/supplier-bank-accounts', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'store']);
         Route::put('/supplier-bank-accounts/{id}', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'update']);
         Route::delete('/supplier-bank-accounts/{id}', [\App\Http\Controllers\API\SupplierBankAccountController::class, 'destroy']);
-        
+
         // Supplier CRM
         Route::get('/supplier-crm/customers', [\App\Http\Controllers\API\SupplierCRMController::class, 'getCustomers']);
         Route::post('/supplier-crm/broadcast', [\App\Http\Controllers\API\SupplierCRMController::class, 'broadcast']);
@@ -130,23 +142,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/procurement/purchase-orders', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'indexPurchaseOrders']);
         Route::post('/procurement/purchase-orders', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'storePurchaseOrder']);
         Route::post('/procurement/purchase-orders/{id}/receive', [\App\Http\Controllers\Api\Supplier\ProcurementController::class, 'receivePurchaseOrder']);
-        
+
         // Advanced B2B Features
         Route::get('/warehouses', [\App\Http\Controllers\API\WarehouseController::class, 'index']);
         Route::post('/warehouses', [\App\Http\Controllers\API\WarehouseController::class, 'store']);
         Route::delete('/warehouses/{id}', [\App\Http\Controllers\API\WarehouseController::class, 'destroy']);
-        
+
         Route::get('/credit-limits', [\App\Http\Controllers\API\CreditLimitController::class, 'index']);
         Route::post('/credit-limits', [\App\Http\Controllers\API\CreditLimitController::class, 'store']);
-        
+
         Route::get('/rfqs/supplier', [\App\Http\Controllers\API\RfqController::class, 'supplierIndex']);
         Route::post('/rfqs/{id}/offer', [\App\Http\Controllers\API\RfqController::class, 'storeOffer']);
-        
+
         Route::get('/subscriptions/supplier', [\App\Http\Controllers\API\SubscriptionController::class, 'index']);
-        
+
         Route::get('/webhook-endpoints', [\App\Http\Controllers\API\WebhookController::class, 'index']);
         Route::post('/webhook-endpoints', [\App\Http\Controllers\API\WebhookController::class, 'store']);
-        
+
         Route::get('/sponsored-products', [\App\Http\Controllers\API\SponsoredProductController::class, 'index']);
         Route::post('/sponsored-products', [\App\Http\Controllers\API\SponsoredProductController::class, 'store']);
     });
@@ -160,8 +172,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Invoice Routes
     Route::get('/invoices', [\App\Http\Controllers\API\InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [\App\Http\Controllers\API\InvoiceController::class, 'show']);
-    Route::post('/invoices/{id}/pay', [\App\Http\Controllers\API\InvoiceController::class, 'pay']); // for UMKM
+    Route::post('/invoices/{id}/pay', [\App\Http\Controllers\API\InvoiceController::class, 'pay']); // for UMKM (legacy)
     Route::patch('/invoices/{id}/status', [\App\Http\Controllers\API\InvoiceController::class, 'updateStatus']); // for Supplier
+
+    // ── Xendit Payment Checkout (UMKM) ─────────────────────────────────────
+    Route::middleware('role:umkm')->group(function () {
+        Route::post('/invoices/{invoiceId}/checkout', [CheckoutController::class, 'checkout'])
+            ->name('payment.checkout');
+        Route::get('/invoices/{invoiceId}/payment-status', [CheckoutController::class, 'status'])
+            ->name('payment.status');
+        Route::post('/invoices/{invoiceId}/simulate-payment', [CheckoutController::class, 'simulatePayment'])
+            ->name('payment.simulate');
+    });
 
     // Dispute (RMA) Routes
     Route::get('/disputes', [\App\Http\Controllers\API\DisputeController::class, 'index']);
@@ -177,13 +199,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reviews', [ReviewController::class, 'store']);
         Route::put('/reviews/{id}', [ReviewController::class, 'update']);
         Route::get('/my-reviews', [ReviewController::class, 'myReviews']);
-        
+
         // Apply Voucher
         Route::post('/vouchers/apply', [\App\Http\Controllers\API\VoucherController::class, 'apply']);
 
         // Returns / RMA (UMKM side)
         Route::post('/my-returns', [\App\Http\Controllers\Api\Supplier\ReturnRequestController::class, 'store']);
-        
+
         // Advanced B2B Features
         Route::get('/rfqs/umkm', [\App\Http\Controllers\API\RfqController::class, 'umkmIndex']);
         Route::post('/subscriptions', [\App\Http\Controllers\API\SubscriptionController::class, 'store']);
@@ -218,10 +240,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+
+}); // End of auth:sanctum middleware group
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Xendit Webhook (TANPA auth — divalidasi via x-callback-token header)
+// Harus di-exclude dari CSRF dan auth middleware
+// ──────────────────────────────────────────────────────────────────────────────
+Route::prefix('webhook/xendit')->group(function () {
+    Route::post('/qris', [XenditWebhookController::class, 'handleQris'])
+        ->name('webhook.xendit.qris');
+    Route::post('/va', [XenditWebhookController::class, 'handleVa'])
+        ->name('webhook.xendit.va');
 });
-
-
-
 
 
 

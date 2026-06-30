@@ -31,7 +31,7 @@ class OrderController extends Controller
                 throw new AuthorizationException('Hanya admin yang dapat melihat semua pesanan.');
             }
 
-            $orders = Order::with(['buyer', 'supplier', 'product', 'groupBuying'])->get();
+            $orders = Order::with(['buyer', 'supplier', 'product', 'groupBuying', 'invoice'])->get();
 
             return response()->json([
                 'success' => true,
@@ -48,7 +48,7 @@ class OrderController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         try {
-            $order = Order::with(['buyer', 'supplier', 'product', 'groupBuying'])->findOrFail($id);
+            $order = Order::with(['buyer', 'supplier', 'product', 'groupBuying', 'invoice'])->findOrFail($id);
 
             $isAdmin    = $request->user()->hasRole('admin');
             $isBuyer    = $order->buyer_id === $request->user()->id;
@@ -103,7 +103,7 @@ class OrderController extends Controller
                 throw new AuthorizationException('Hanya pengguna UMKM yang dapat melihat pesanan mereka.');
             }
 
-            $orders = Order::with(['buyer', 'supplier', 'product', 'groupBuying'])
+            $orders = Order::with(['buyer', 'supplier', 'product', 'groupBuying', 'invoice'])
                 ->where('buyer_id', $request->user()->id)
                 ->get();
 

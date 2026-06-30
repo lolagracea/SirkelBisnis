@@ -134,6 +134,11 @@ class AuthController extends Controller
 
             $user->supplierProfile()->create($request->safe()->only([
                 'supplier_name',
+                'province',
+                'district_city',
+                'kecamatan',
+                'kelurahan',
+                'street_address',
                 'address',
                 'description',
                 'latitude',
