@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'width',
     'height',
 ])]
+
 class Product extends Model
 {
     use HasFactory;
@@ -57,5 +58,10 @@ class Product extends Model
     public function tierPrices(): HasMany
     {
         return $this->hasMany(ProductTierPrice::class);
+    }
+
+    public function warehouses()
+    {
+        return $this->belongsToMany(Warehouse::class, 'product_warehouse')->withPivot('stock');
     }
 }

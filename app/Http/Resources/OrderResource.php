@@ -43,6 +43,15 @@ class OrderResource extends JsonResource
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'product' => new ProductResource($this->whenLoaded('product')),
             'group_buying' => new GroupBuyingResource($this->whenLoaded('groupBuying')),
+            'invoice' => $this->whenLoaded('invoice', function () {
+                return [
+                    'id' => $this->invoice->id,
+                    'amount' => $this->invoice->amount,
+                    'status' => $this->invoice->status,
+                    'payment_method' => $this->invoice->payment_method,
+                    'due_date' => $this->invoice->due_date,
+                ];
+            }),
         ];
     }
 }

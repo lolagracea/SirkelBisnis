@@ -12,6 +12,7 @@ import useConfirmPopup from '../../hooks/useConfirmPopup';
 import ConfirmModal from '../../components/ConfirmModal';
 import ChatTab from './Tabs/ChatTab';
 import axios from 'axios';
+import CheckoutModal from '../../components/Payment/CheckoutModal';
 import { 
   Users, 
   ShoppingCart, 
@@ -192,6 +193,10 @@ export default function Dashboard() {
     }
   };
 
+  // Payment Checkout Modal States
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
   // Load data on mount
   useEffect(() => {
     const loadAllData = async () => {
@@ -361,6 +366,25 @@ export default function Dashboard() {
     }
   };
 
+  const openCheckout = (order) => {
+    if (!order.invoice) {
+      setSuccessToastMessage('Invoice belum tersedia untuk pesanan ini.');
+      setIsSuccessToastVisible(true);
+      setTimeout(() => setIsSuccessToastVisible(false), 4000);
+      return;
+    }
+    setSelectedInvoice(order.invoice);
+    setIsCheckoutModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsCheckoutModalOpen(false);
+    setSuccessToastMessage('Pembayaran berhasil dikonfirmasi!');
+    setIsSuccessToastVisible(true);
+    setTimeout(() => setIsSuccessToastVisible(false), 4000);
+    fetchMyOrders();
+  };
+
   // Derived dashboard variables
   const profile = {
     business_name: user?.profile?.business_name || user?.name || 'UMKM Owner',
@@ -404,7 +428,10 @@ export default function Dashboard() {
       quantity: o.quantity,
       total_price: o.total_price,
       status: o.status ? (o.status.charAt(0).toUpperCase() + o.status.slice(1)) : 'Pending',
-      date: formattedDate
+      payment_status: o.payment_status || 'pending',
+      date: formattedDate,
+      invoice: o.invoice || null,
+      raw_id: o.id
     };
   });
 
@@ -1207,7 +1234,16 @@ export default function Dashboard() {
                                   Terima Barang
                                 </button>
                               )}
-                              {o.status !== 'Shipped' && <span className="text-[#94A3B8]">-</span>}
+                              {(o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid' && (
+                                <button
+                                  onClick={() => openCheckout(o)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-green-700 shadow-sm"
+                                >
+                                  <DollarSign className="h-3.5 w-3.5" />
+                                  Bayar
+                                </button>
+                              )}
+                              {o.status !== 'Shipped' && !((o.status === 'Pending' || o.payment_status === 'pending') && o.invoice && o.invoice.status !== 'paid') && <span className="text-[#94A3B8]">-</span>}
                             </td>
                           </tr>
                         ))}
@@ -1518,11 +1554,10 @@ export default function Dashboard() {
                   className="w-full rounded-xl border border-[#E2E8F0] px-3.5 py-2.5 text-xs outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/25 bg-white font-bold text-[#0F172A]"
                   required
                 >
-                  <option value={1}>1 Hari</option>
-                  <option value={2}>2 Hari</option>
-                  <option value={3}>3 Hari</option>
-                  <option value={5}>5 Hari</option>
-                  <option value={7}>7 Hari</option>
+                  <option value="3">3 Hari</option>
+                  <option value="5">5 Hari</option>
+                  <option value="7">7 Hari</option>
+                  <option value="14">14 Hari</option>
                 </select>
               </div>
             </div>
@@ -1546,6 +1581,15 @@ export default function Dashboard() {
             </div>
           </form>
         </div>
+      )}
+
+      {isCheckoutModalOpen && selectedInvoice && (
+        <CheckoutModal
+          invoice={selectedInvoice}
+          user={user}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
       )}
 
       {/* DETAIL SUPPLIER MODAL */}
