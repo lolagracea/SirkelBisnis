@@ -161,7 +161,6 @@ class OrderController extends Controller
                 throw new AuthorizationException('Hanya supplier penerima pesanan yang dapat memperbarui status.');
             }
 
-            $updatedOrder = $this->orderService->updateStatus($request->user(), $order, $request->status);
             $extraData = $request->only(['shipping_courier', 'tracking_number']);
             $updatedOrder = $this->orderService->updateStatus(
                 $request->user(),

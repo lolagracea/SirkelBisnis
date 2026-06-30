@@ -494,7 +494,7 @@ export default function Dashboard({ flash = {} } = {}) {
       const numericId = parseInt(orderId.replace('ORD-', ''), 10);
       // We don't have getOrder in useOrders, but we can fetch it via orderService if needed, or find in local state.
       // Since we added rawId in mapped orders, we can find it in 'orders' state.
-      const orderData = orders.find(o => o.id === numericId);
+      const orderData = localOrders.find(o => o.rawId === numericId);
       if(orderData) {
         setSelectedOrderDetail(orderData);
       } else {
